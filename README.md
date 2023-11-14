@@ -1,5 +1,7 @@
 Roblox animation reuploader using Roblox plugins and python
 
+made by [kartFr](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw)
+
 # How to open folder in terminal
 every step uses this method
 
