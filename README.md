@@ -1,5 +1,4 @@
-# Auto-Animation-Stealer
-Roblox animation reuploader
+Roblox animation reuploader using Roblox plugins and python
 
 # How to open folder in terminal
 every step uses this method
@@ -18,10 +17,14 @@ every step uses this method
 
   `pip install -r requirements.txt`
 
+3. install the [plugin](google.com)
+
 # How to use
 
 1. open the folder in terminal
 
-2.  run main.py with:
+2. run main.py with:
 
    `python main.py`
+
+3. connect the plugin
