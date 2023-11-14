@@ -21,7 +21,7 @@ every step uses this method
 
    `pip install -r requirements.txt`
 
-3. install the [plugin](google.com)
+3. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
 
 # How to use
 
