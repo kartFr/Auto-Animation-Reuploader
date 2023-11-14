@@ -1,4 +1,4 @@
-# [LatestRelease]()
+# [Latest Release](github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 
 Roblox animation reuploader using Roblox plugins and python
 
