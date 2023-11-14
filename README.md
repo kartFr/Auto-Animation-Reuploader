@@ -28,3 +28,5 @@ every step uses this method
    `python main.py`
 
 3. connect the plugin
+
+4. 🤑🤑🤑🤑🤑
