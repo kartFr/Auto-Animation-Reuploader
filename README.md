@@ -15,7 +15,7 @@ every step uses this method
    
 2. install the requirements with:
 
-  `pip install -r requirements.txt`
+   `pip install -r requirements.txt`
 
 3. install the [plugin](google.com)
 
