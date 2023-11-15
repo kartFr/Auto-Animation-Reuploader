@@ -1,21 +1,76 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import time
+import threading
+import time
 import requests
 import json
 import os
 
+start = 0
 animations = {}
 finished = False
 
 os.system("cls")
 cookie = input("cookie: ")
 
-csrfToken = requests.post(
+xsrf = requests.post(
     "https://auth.roblox.com/v2/logout",
     cookies={".ROBLOSECURITY": cookie}
-).headers["x-csrf-token"]
+).headers["X-CSRF-TOKEN"]
 
 os.system("cls")
 groupId = input("group id leave blank and press enter if none: ")
+
+def makeAnimations(animationsToPublish):
+    print("plugin connected started publishing...")
+
+    global xsrf
+    global start
+    start = time.time()
+
+    count = 0
+    maxCount = len(animationsToPublish)
+
+    for animation in animationsToPublish:
+        count += 1
+
+        for i in range(0, 3):
+            animationData = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + animation).content
+            publishRequest =  requests.post(
+                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={animationsToPublish[animation]}&description=sub to kartfr on yt🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False" + (groupId != "" and "&groupId=" + groupId or ""),
+                animationData,
+                headers={"X-CSRF-TOKEN": xsrf,  "User-Agent": "RobloxStudio/WinInet"},
+                cookies={".ROBLOSECURITY": cookie}
+            )
+
+            animationID = publishRequest.content.decode("utf-8")
+
+            if animationID.isnumeric():
+                break
+            else:
+                print(f"\033[31m[{count}/{maxCount}] failed to publish failed to publish {animationsToPublish[animation]} with {animation} retrying in 3 seconds")
+                time.sleep(3)
+
+                if publishRequest.status_code == 403 and publishRequest.reason == "XSRF Token Validation Failed":
+                    print(f"\033[31mXSRF token expired fetching new one")
+                    xsrf = requests.post(
+                        "https://auth.roblox.com/v2/logout",
+                        cookies={".ROBLOSECURITY": cookie}
+                    ).headers["X-CSRF-TOKEN"]
+
+        if animationID.isnumeric():
+            animations[animation] = animationID
+            print(f"\033[32m[{count}/{maxCount}] {animationsToPublish[animation]}: {animation} ; {animationID}")
+        else:
+            print(f"\033[31m[{count}/{maxCount}] failed to publish {animationsToPublish[animation]} with {animation}")
+    
+    hours, remainder = divmod(time.time() - start, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    print(f"\033[0mpublishing took {int(hours)} hours, {int(minutes)} minutes, and {int(seconds)} seconds")
+    print("\033[0mconverted all animations waiting for client...")
+    global finished
+    finished = True
 
 class Requests(BaseHTTPRequestHandler):
 
@@ -34,26 +89,12 @@ class Requests(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
 
-        print("plugin connected starting...")
-
         contentLength = int(self.headers['Content-Length'])
         animationsToPublish = json.loads(self.rfile.read(contentLength).decode('utf-8'))
 
-        for animation in animationsToPublish:
-            animationData = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + animation).content
-            animationID =  requests.post(
-                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={animationsToPublish[animation]}&description=sub to kartfr on yt🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False" + (groupId != "" and "&groupId=" + groupId or ""),
-                animationData,
-                headers={"x-csrf-token": csrfToken,  "User-Agent": "RobloxStudio/WinInet"},
-                cookies={".ROBLOSECURITY": cookie}
-            ).content.decode("utf-8")
+        thread = threading.Thread(target=makeAnimations, args=[animationsToPublish])
+        thread.start()
 
-            animations[animation] = animationID
-            print("\033[32m" + animationsToPublish[animation] + ": " + animation + " ; " + animationID)
-
-        print("\033[0mconverted all animations waiting for client...")
-        global finished
-        finished = True
             
                 
 
