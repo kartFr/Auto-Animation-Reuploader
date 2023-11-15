@@ -2,8 +2,8 @@
 
 Roblox animation reuploader using Roblox plugins and python
 
-# coded well? perhaps not.
-works well? perhaps, can upload 500+ animations in around 15 minutes
+### coded well? perhaps not.
+### works well? perhaps, can upload 500+ animations in around 15 minutes
 
 very bare bones pray when you use it also some animations just fail to upload idk why
 
