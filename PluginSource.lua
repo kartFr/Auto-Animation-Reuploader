@@ -43,7 +43,7 @@ gui.BUTTon.MouseButton1Down:Connect(function()
 	end
 
 	started = true
-    
+
 	local animations = {}
 	local animationMap = {}
 	local skipped = {}
@@ -68,7 +68,7 @@ gui.BUTTon.MouseButton1Down:Connect(function()
 
 			for i=1,3 do
 				pcall(function()
-					name = MarketPlaceService:GetProductInfo(id).Name
+					name = MarketPlaceService:GetProductInfo(id)
 				end)
 
 				if name then
@@ -84,11 +84,11 @@ gui.BUTTon.MouseButton1Down:Connect(function()
 				end
 			end
 
-			if name then
-				animations[id] = name
+			if name and name.Creator.Name ~= "Roblox" then
+				animations[id] = name.Name
 				animationMap[id] = {}
 				animationCount += 1
-				
+
 				table.insert(animationMap[id], v)
 				warn("looped through " .. animationCount .. " different animations")
 			end
@@ -101,14 +101,14 @@ gui.BUTTon.MouseButton1Down:Connect(function()
 
 
 	local newAnimations = ""
-	
+
 	repeat 
 		task.wait(1) 
 		newAnimations = HTTPService:GetAsync("http://localhost:6969")
 	until newAnimations ~= ""
 
 	newAnimations = HTTPService:JSONDecode(newAnimations)
-	
+
 	local failedAnimations = {}
 
 	for oldId, newId in pairs(newAnimations) do
@@ -118,13 +118,13 @@ gui.BUTTon.MouseButton1Down:Connect(function()
 		end
 		animationMap[oldId] = nil
 	end
-	
+
 	for i,v in pairs(animationMap) do
 		for i, failedAnimation in pairs(v) do
 			table.insert(failedAnimations, failedAnimation)
 		end
 	end
-	
+
 	warn("failed to steal animations for:", table.unpack(failedAnimations))
 	started = false
 end)
