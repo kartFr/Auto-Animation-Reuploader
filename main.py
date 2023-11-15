@@ -82,10 +82,7 @@ class Requests(BaseHTTPRequestHandler):
         animationsToPublish = json.loads(self.rfile.read(contentLength).decode('utf-8'))
 
         thread = threading.Thread(target=makeAnimations, args=[animationsToPublish])
-        thread.start()
-
-            
-                
+        thread.start()     
 
     def log_message(self, *args):
         pass
@@ -106,4 +103,3 @@ groupId = input("group id leave blank and press enter if none: ")
 os.system("cls")
 print("localhost started connect the plugin")
 server.serve_forever()
-
