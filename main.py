@@ -10,17 +10,6 @@ start = 0
 animations = {}
 finished = False
 
-os.system("cls")
-cookie = input("cookie: ")
-
-xsrf = requests.post(
-    "https://auth.roblox.com/v2/logout",
-    cookies={".ROBLOSECURITY": cookie}
-).headers["X-CSRF-TOKEN"]
-
-os.system("cls")
-groupId = input("group id leave blank and press enter if none: ")
-
 def makeAnimations(animationsToPublish):
     print("plugin connected started publishing...")
 
@@ -102,6 +91,17 @@ class Requests(BaseHTTPRequestHandler):
         pass
         
 server = HTTPServer(("localhost", 6969), Requests)
+
+os.system("cls")
+cookie = input("cookie: ")
+
+xsrf = requests.post(
+    "https://auth.roblox.com/v2/logout",
+    cookies={".ROBLOSECURITY": cookie}
+).headers["X-CSRF-TOKEN"]
+
+os.system("cls")
+groupId = input("group id leave blank and press enter if none: ")
 
 os.system("cls")
 print("localhost started connect the plugin")
