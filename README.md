@@ -7,8 +7,7 @@
 
 Roblox animation reuploader using Roblox plugins and python
 
-not coded very well pray when you use it also some animations just fail to upload idk why
-
+coded in one day and not coded very well so don't expect much pray when you use it also some animations just fail to upload idk why
 
 
 made by [kartFr(me)](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw)
