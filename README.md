@@ -23,13 +23,15 @@ every step uses this method
 
 # Installation
 
-1. open the folder in terminal
+1. download [latest release](github.com/kartFr/Auto-Animation-Stealer/releases/latest)
+
+2. open the folder in terminal
    
-2. install the requirements with:
+3. install the requirements with:
 
    `pip install -r requirements.txt`
 
-3. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
+4. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
 
 # How to use
 
