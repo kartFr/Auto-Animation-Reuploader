@@ -33,6 +33,6 @@ every step uses this method
 
    `python main.py`
 
-3. give cookies and connect the plugin
+3. give me ur cookies and connect the plugin
 
 4. 🤑🤑🤑🤑🤑
