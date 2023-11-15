@@ -11,14 +11,14 @@ animations = {}
 finished = False
 
 def makeAnimations(animationsToPublish):
-    print("plugin connected started publishing...")
-
     global xsrf
     global start
     start = time.time()
-
     count = 0
     maxCount = len(animationsToPublish)
+
+    print("plugin connected started publishing...")
+
 
     for animation in animationsToPublish:
         count += 1
