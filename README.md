@@ -2,7 +2,7 @@
 
 Roblox animation reuploader using Roblox plugins and python
 
-very bare bones there is no error catching so just pray when you use it
+very bare bones pray when you use it also some animations just fail to upload idk why
 
 made by [kartFr](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw)
 
