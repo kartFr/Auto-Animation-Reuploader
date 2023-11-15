@@ -6,7 +6,8 @@
 # info
 
 Roblox animation reuploader using Roblox plugins and python
-very bare bones pray when you use it also some animations just fail to upload idk why
+
+not coded very well pray when you use it also some animations just fail to upload idk why
 
 
 
