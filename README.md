@@ -11,7 +11,7 @@ not coded very well pray when you use it also some animations just fail to uploa
 
 
 
-made by [kartFr](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw)
+made by [kartFr(me)](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw)
 
 # How to open folder in terminal
 every step uses this method
