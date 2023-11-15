@@ -1,10 +1,11 @@
 # [Latest Release](github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 
-Roblox animation reuploader using Roblox plugins and python
-
 ### coded well? perhaps not.
 ### works well? perhaps, can upload 500+ animations in around 15 minutes
 
+# info
+
+Roblox animation reuploader using Roblox plugins and python
 very bare bones pray when you use it also some animations just fail to upload idk why
 
 
