@@ -4,6 +4,8 @@ Roblox animation reuploader using Roblox plugins and python
 
 very bare bones pray when you use it also some animations just fail to upload idk why
 
+can upload 500+ animations in around 15 minutes
+
 made by [kartFr](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw)
 
 # How to open folder in terminal
