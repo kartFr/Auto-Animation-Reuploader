@@ -21,7 +21,7 @@ every step uses this method
 
 # Installation
 
-1. download [latest release](github.com/kartFr/Auto-Animation-Stealer/releases/latest)
+1. download [latest release](releases/latest)
 
 2. open the folder in terminal
    
