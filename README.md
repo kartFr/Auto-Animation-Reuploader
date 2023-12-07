@@ -1,5 +1,3 @@
-# [Latest Release](releases/latest)
-
 ### coded well? perhaps not.
 ### works well? perhaps, can upload 500+ animations in around 15 minutes
 
