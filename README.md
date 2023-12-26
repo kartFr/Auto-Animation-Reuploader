@@ -22,7 +22,7 @@ every step uses this method
 
 # Installation
 
-1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
+1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and download python
 
 2. open the folder in terminal
    
