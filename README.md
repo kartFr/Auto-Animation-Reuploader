@@ -22,9 +22,9 @@ every step uses this method
 
 # Installation
 
-1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and download python on the [microsoft store(latest release as of making this)](ms-windows-store://pdp/?ProductId=9NRWMJP3717K) or the [website](https://www.python.org/downloads/)
+1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and download python on the [microsoft store(latest release as of making this)]([ms-windows-store://pdp/?ProductId=9NRWMJP3717K](https://apps.microsoft.com/detail/9NCVDN91XZQP?hl=en-us&gl=US)) or the [website](https://www.python.org/downloads/)
 
-<a href="ms-windows-store://pdp/?ProductId=9NRWMJP3717K">blah</a>
+[a](ms-windows-store://pdp/?ProductId=9NRWMJP3717K)
    
 3. extract the folder(the fact that i have had multiple people dm me without extracting the folder and i have to put this as an instruction is devastating)
 
