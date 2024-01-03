@@ -23,16 +23,18 @@ every step uses this method
 # Installation
 
 1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and download python on the [microsoft store(latest release as of making this)](ms-windows-store://pdp/?ProductId=9NRWMJP3717K) or the [website](https://www.python.org/downloads/)
-   
-2. extract the folder(the fact that i have had multiple people dm me without extracting the folder and i have to put this as an instruction is devastating)
 
-3. open the folder in terminal
+<a href="ms-windows-store://pdp/?ProductId=9NRWMJP3717K">
    
-4. install the requirements with:
+3. extract the folder(the fact that i have had multiple people dm me without extracting the folder and i have to put this as an instruction is devastating)
+
+4. open the folder in terminal
+   
+5. install the requirements with:
 
    `pip install -r requirements.txt`
 
-5. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
+6. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
 
 # How to use
 
