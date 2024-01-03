@@ -23,14 +23,16 @@ every step uses this method
 # Installation
 
 1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and download python
-
-2. open the folder in terminal
    
-3. install the requirements with:
+2. extract the folder(the fact that i have had multiple people dm me without extracting the folder and i have to put this as an instruction is devastating)
+
+3. open the folder in terminal
+   
+4. install the requirements with:
 
    `pip install -r requirements.txt`
 
-4. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
+5. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
 
 # How to use
 
