@@ -34,7 +34,7 @@ you can open the folder and type in cmd at the top
 
 4. open the folder in terminal
    
-5. install the requirements with:
+5. install the requirements with the command:
 
    `pip install -r requirements.txt`
 
@@ -44,7 +44,7 @@ you can open the folder and type in cmd at the top
 
 1. open the folder in terminal
 
-2. run main.py with:
+2. run the command main.py with:
 
    `python main.py`
 
