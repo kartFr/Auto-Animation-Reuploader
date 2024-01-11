@@ -48,6 +48,6 @@ you can open the folder and type in cmd at the top
 
    `python main.py`
 
-3. give me ur cookies and connect the plugin
+3. give me ur cookies and connect the plugin (OPEN THE PLUGIN you might have to restart studio)
 
 4. 🤑🤑🤑🤑🤑
