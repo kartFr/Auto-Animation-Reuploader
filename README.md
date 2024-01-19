@@ -26,6 +26,8 @@ you can open the folder and type in cmd at the top
 
 ![image](https://github.com/kartFr/Auto-Animation-Stealer/assets/94320656/b79ab48a-9fa3-4542-a923-13a6404a2198)
 
+(or hear me out, search it up)
+
 # Installation
 
 1. download [latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and download python on the [microsoft store(latest release as of making this)](https://apps.microsoft.com/detail/9NCVDN91XZQP?hl=en-us&gl=US) or the [website](https://www.python.org/downloads/)
