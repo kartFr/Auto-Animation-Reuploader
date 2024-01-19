@@ -40,7 +40,7 @@ you can open the folder and type in cmd at the top
 
    `pip install -r requirements.txt`
 
-6. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
+6. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) (you might have to restart studio)
 
 # How to use
 
