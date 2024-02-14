@@ -9,6 +9,7 @@ import os
 start = 0
 animations = {}
 finished = False
+started = False
 
 def makeAnimations(animationsToPublish):
     global xsrf
@@ -42,10 +43,17 @@ def makeAnimations(animationsToPublish):
 
                 if publishRequest.status_code == 403 and publishRequest.reason == "XSRF Token Validation Failed":
                     print(f"\033[31mXSRF token expired fetching new one")
-                    xsrf = requests.post(
-                        "https://auth.roblox.com/v2/logout",
-                        cookies={".ROBLOSECURITY": cookie}
-                    ).headers["X-CSRF-TOKEN"]
+                    for i in range(0, 3):
+                            try:
+                                xsrf = requests.post(
+                                    "https://auth.roblox.com/v2/logout",
+                                    cookies={".ROBLOSECURITY": cookie}
+                                ).headers["X-CSRF-TOKEN"]
+
+                                break
+                            except:
+                                print(f"\033[31mFailed getting XSRF token trying in 3 seconds")
+                                time.sleep(3)
 
         if animationID.isnumeric():
             animations[animation] = animationID
@@ -78,11 +86,13 @@ class Requests(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
 
-        contentLength = int(self.headers['Content-Length'])
-        animationsToPublish = json.loads(self.rfile.read(contentLength).decode('utf-8'))
-
-        thread = threading.Thread(target=makeAnimations, args=[animationsToPublish])
-        thread.start()     
+        if not started:
+            started = True
+            contentLength = int(self.headers['Content-Length'])
+            animationsToPublish = json.loads(self.rfile.read(contentLength).decode('utf-8'))
+    
+            thread = threading.Thread(target=makeAnimations, args=[animationsToPublish])
+            thread.start()     
 
     def log_message(self, *args):
         pass
