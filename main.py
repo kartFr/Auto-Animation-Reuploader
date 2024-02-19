@@ -46,7 +46,7 @@ def makeAnimations(animationsToPublish):
                     for i in range(0, 3):
                             try:
                                 xsrf = requests.post(
-                                    "https://auth.roblox.com/v2/logout",
+                                    "https://www.roblox.com/home",
                                     cookies={".ROBLOSECURITY": cookie}
                                 ).headers["X-CSRF-TOKEN"]
 
@@ -86,6 +86,7 @@ class Requests(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
 
+        global started
         if not started:
             started = True
             contentLength = int(self.headers['Content-Length'])
@@ -103,7 +104,7 @@ os.system("cls")
 cookie = input("cookie: ")
 
 xsrf = requests.post(
-    "https://auth.roblox.com/v2/logout",
+    "https://www.roblox.com/home",
     cookies={".ROBLOSECURITY": cookie}
 ).headers["X-CSRF-TOKEN"]
 
