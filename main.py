@@ -46,7 +46,7 @@ def makeAnimations(animationsToPublish):
                     for i in range(0, 3):
                             try:
                                 xsrf = requests.post(
-                                    "https://www.roblox.com/home",
+                                    "https://auth.roblox.com/v2/logout",
                                     cookies={".ROBLOSECURITY": cookie}
                                 ).headers["X-CSRF-TOKEN"]
 
@@ -104,7 +104,7 @@ os.system("cls")
 cookie = input("cookie: ")
 
 xsrf = requests.post(
-    "https://www.roblox.com/home",
+    "https://auth.roblox.com/v2/logout",
     cookies={".ROBLOSECURITY": cookie}
 ).headers["X-CSRF-TOKEN"]
 
