@@ -1,8 +1,11 @@
 # [Latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
-install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
-
 ### coded well? perhaps not.
 ### works well? perhaps, can upload 500+ animations in around 15 minutes
+
+# How to use
+
+1. download the exe and put in your roblox cookie and group id
+2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
 
 # info
 
