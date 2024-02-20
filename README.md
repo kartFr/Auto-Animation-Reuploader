@@ -5,7 +5,7 @@
 # How to use
 
 1. download the exe and put in your roblox cookie and group id
-2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
+2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and connect it(you might have to restart studio)
 
 # info
 
