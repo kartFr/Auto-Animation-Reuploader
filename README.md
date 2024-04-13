@@ -1,12 +1,13 @@
 # [Latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 (false positives w/ the exe because of py installer trust it or don't. I wont help you run the py file just look up a tutorial.)
+(also errors sometimes but im too lazy to fix just rerun 😔)
 ### coded well? perhaps not.
 ### works well? perhaps, can upload 500+ animations in around 15 minutes
 
 # How to use
 
 1. download the exe and put in your roblox cookie and group id
-2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and connect it(you might have to restart studio)
+2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and press the connect button(you might have to restart studio)
 
 # info
 
