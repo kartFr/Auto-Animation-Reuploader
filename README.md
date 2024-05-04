@@ -7,7 +7,7 @@
 
 # How to use
 
-1. download the exe and put in your roblox cookie and group id
+1. download the [exe](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and put in your roblox cookie and group id
 2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and press the connect button(you might have to restart studio for the plugin to work after you install it)
 
 # info
