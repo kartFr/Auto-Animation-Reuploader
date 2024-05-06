@@ -13,4 +13,4 @@ made by [kartFr(me)](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw) p
 # How to use
 
 1. download the [exe](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and put in your roblox cookie and group id
-2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and press the connect button(you might have to restart studio for the plugin to work after you install it)
+2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and press the connect button. Takes a little to send to the console after connectiong. Open the roblox output if you want to what it's doing 😱.(you might have to restart studio for the plugin to work after you install it)
