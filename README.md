@@ -1,3 +1,4 @@
+# READING WILL SOVLE 90% OF UR PROBLEMS V
 # [Latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 (false positives w/ the exe because of py installer trust it or don't. I wont help you run the py file just look up a tutorial.)
 
