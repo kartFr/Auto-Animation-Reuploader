@@ -1,4 +1,4 @@
-# READING WILL SOVLE 90% OF UR PROBLEMS ⬇️
+# READING WILL SOLVE 90% OF UR PROBLEMS ⬇️
 # [Latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 ### coded well? perhaps not.
 ### works well? perhaps, can upload 500+ animations in around 15 minutes
