@@ -1,3 +1,4 @@
+update coming eventually
 # READING WILL SOLVE 90% OF UR PROBLEMS ⬇️
 # [Latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 ### coded well? perhaps not.
