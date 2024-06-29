@@ -1,6 +1,6 @@
 # Animation Reuploader
 [![Lastest](https://img.shields.io/github/v/release/kartfr/Auto-Animation-Reuploader)](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
-[![License](https://img.shields.io/github/license/kartFr/Auto-Animation-Reuploader-blue)](https://github.com/kartFr/Auto-Animation-Reuploader?tab=GPL-3.0-1-ov-file)
+[![License](https://img.shields.io/github/license/kartFr/Auto-Animation-Reuploader)](https://github.com/kartFr/Auto-Animation-Reuploader?tab=GPL-3.0-1-ov-file)
 [![Discord](https://img.shields.io/badge/chat-on_discord-blue)](https://discord.gg/DhdCWJukWn)
 
 
