@@ -12,8 +12,7 @@
 Roblox animation reuploader using a Roblox plugin and python
 made by [kartFr(me)](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw) pls sub
 - false positives w/ the exe because of py installer trust it or don't. I wont help you run the py file just look up a tutorial.
-- also errors sometimes but im too lazy to fix just rerun 😔
 
 ## How to use
-1. download the [exe](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and put in your roblox cookie and group id
-2. install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=)
+1. Download the [exe](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and put in your roblox cookie.
+2. Install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and press some silly buttons.
