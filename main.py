@@ -1,84 +1,170 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import time
 import threading
-import time
 import requests
 import json
+import time
 import os
 
-start = 0
-animations = {}
-finished = False
+completedEvent = threading.Event()
+completedAnimations = {}
 started = False
+finished = False
+cookie = None
+totalAnimations = 0
+animationsUploaded = 0
 
-def makeAnimations(animationsToPublish):
-    global xsrf
-    global start
-    start = time.time()
-    count = 0
-    maxCount = len(animationsToPublish)
+XSRFTokenEvent = threading.Event()
+fetchingXSRFToken = False
+XSRFToken = None
 
-    print("plugin connected started publishing...")
+def clearScreen():
+    os.system("cls" if os.name == "nt" else "clear") #nt is windows, clear is for linux and mac. (this is the only mac and linux incompatibility in the previous versions that I was too lazy to fix lmao)
 
+def getXSRFToken():
+    global XSRFToken
+    global fetchingXSRFToken
+    global XSRFTokenEvent
 
-    for animation in animationsToPublish:
-        count += 1
+    if fetchingXSRFToken:
+        XSRFTokenEvent.wait()
+        return
+    
+    fetchingXSRFToken = True
 
-        for i in range(0, 3):
+    if XSRFToken:
+        print(f"\033[31mXSRF token expired fetching new one")
+
+    for i in range(0, 3):
+        try:
+            XSRFToken = requests.post(
+                "https://auth.roblox.com/v2/logout",
+                cookies={".ROBLOSECURITY": cookie}
+            ).headers["X-CSRF-TOKEN"]
+            break
+        except:
+            print(f"\033[31mFailed getting XSRF token trying in 5 seconds")
+            time.sleep(5)
+            pass
+
+    fetchingXSRFToken = False
+    XSRFTokenEvent.set()
+    XSRFTokenEvent.clear()
+
+def publishAnimation(animation, name, groupId):
+    global completedAnimations
+    global fetchingXSRFToken
+    global animationsUploaded
+    global totalAnimations
+    global XSRFToken
+    global cookie
+
+    animationId = None
+
+    if not XSRFToken:
+        getXSRFToken()
+
+    for i in range(0, 3):
+        if fetchingXSRFToken:
+            getXSRFToken()
+
+        animationData = None
+        publishRequest = None
+
+        try:
             animationData = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + animation).content
+        except:
+            continue
+        
+        try:
             publishRequest =  requests.post(
-                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={animationsToPublish[animation]}&description=sub to kartfr on yt🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False" + (groupId != "" and "&groupId=" + groupId or ""),
+                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={name}&description=sub to kartfr on yt🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{"&groupId=" + str(groupId) if groupId else ""}",
                 animationData,
-                headers={"X-CSRF-TOKEN": xsrf,  "User-Agent": "RobloxStudio/WinInet"},
+                headers={"X-CSRF-TOKEN": XSRFToken,  "User-Agent": "RobloxStudio/WinInet"},
                 cookies={".ROBLOSECURITY": cookie}
             )
+        except:
+            continue
 
-            animationID = publishRequest.content.decode("utf-8")
+        content = publishRequest.content.decode("utf-8")
+        if content.isnumeric():
+            animationId = content
+            break
 
-            if animationID.isnumeric():
-                break
-            else:
-                print(f"\033[31m[{count}/{maxCount}] failed to publish failed to publish {animationsToPublish[animation]} with {animation} retrying in 3 seconds")
-                time.sleep(3)
+        match publishRequest.status_code:
+            case 500: # Internal Server Error
+                time.sleep(1)
+                continue
+            case 403: # Forbidden
+                if publishRequest.reason == "XSRF Token Validation Failed":
+                    getXSRFToken()
+                    continue
 
-                if publishRequest.status_code == 403 and publishRequest.reason == "XSRF Token Validation Failed":
-                    print(f"\033[31mXSRF token expired fetching new one")
-                    for i in range(0, 3):
-                            try:
-                                xsrf = requests.post(
-                                    "https://auth.roblox.com/v2/logout",
-                                    cookies={".ROBLOSECURITY": cookie}
-                                ).headers["X-CSRF-TOKEN"]
+        match content:
+            case "Inappropriate name or description.":
+                name = "[Censored Name]"
+            case _:
+                print(f"\033[31mError found please report: {content}") #Hopefully this will be fine
+                #print(publishRequest.status_code, publishRequest.reason)
 
-                                break
-                            except:
-                                print(f"\033[31mFailed getting XSRF token trying in 3 seconds")
-                                time.sleep(3)
+        time.sleep(1)
+    animationsUploaded += 1
 
-        if animationID.isnumeric():
-            animations[animation] = animationID
-            print(f"\033[32m[{count}/{maxCount}] {animationsToPublish[animation]}: {animation} ; {animationID}")
-        else:
-            print(f"\033[31m[{count}/{maxCount}] failed to publish {animationsToPublish[animation]} with {animation}")
-    
-    hours, remainder = divmod(time.time() - start, 3600)
-    minutes, seconds = divmod(remainder, 60)
+    if not animationId:
+        print(f"\033[31m[{animationsUploaded}/{totalAnimations}] Failed to publish {name}: {animation}.")
+    else:
+        print(f"\033[32m[{animationsUploaded}/{totalAnimations}] {name}: {animation} ; {animationId}")
+        completedAnimations[animation] = animationId
 
-    print(f"\033[0mpublishing took {int(hours)} hours, {int(minutes)} minutes, and {int(seconds)} seconds")
-    print("\033[0mconverted all animations waiting for client...")
+    if animationsUploaded == totalAnimations:
+        global completedEvent
+        completedEvent.set()
+        completedEvent.clear()
+
+def publishAnimationAsync(animation, name, groupId):
+    newThread = threading.Thread(target= publishAnimation, args=(animation, name, groupId,))
+    newThread.start()
+    time.sleep(1/7) #throttle(420 a minute XDXD) because bad things happen when you are sending too many requests at once without a proxy. Someone can pull and I will merge with your permission if you want to make it faster.
+    #I left 80 for some room for errors. Should be fine as long as you don't have more than 80 animations failing within a minute.
+
+def bulkPublishAnimations(animations, groupId):
+    global totalAnimations
+    global completedEvent
     global finished
+
+    totalAnimations = len(animations)
+    startTime = time.time()
+
+    for animation in animations:
+        publishAnimationAsync(animation, animations[animation], groupId)
+    
+    completedEvent.wait()
+
+    hours, remainder = divmod(time.time() - startTime, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    print(f"\033[0mPublishing took {int(hours)} hours, {int(minutes)} minutes, and {int(seconds)} seconds.")
+    print("\033[0mWaiting for client...")
     finished = True
 
-class Requests(BaseHTTPRequestHandler):
+def bulkPublishAnimationsAsync(animations, groupId):
+    newThread = threading.Thread(target=bulkPublishAnimations, args=(animations, groupId,))
+    newThread.start()
 
+class Requests(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
 
-        if finished:
-            self.wfile.write(bytes(json.dumps(animations).encode("utf-8")))
-            print("sending new ID's to client you can exit the terminal now")
+        global finished
+        global completedAnimations
+
+        if finished and len(completedAnimations) == 0:
+            self.wfile.write(bytes(("done").encode("utf-8")))
+            print("\033[0mYou may close this terminal.")
+        else:
+            currentAnimations = completedAnimations
+            completedAnimations = {}
+            self.wfile.write(bytes(json.dumps(currentAnimations).encode("utf-8")))
             
 
     def do_POST(self):
@@ -87,30 +173,22 @@ class Requests(BaseHTTPRequestHandler):
         self.end_headers()
 
         global started
-        if not started:
-            started = True
-            contentLength = int(self.headers['Content-Length'])
-            animationsToPublish = json.loads(self.rfile.read(contentLength).decode('utf-8'))
-    
-            thread = threading.Thread(target=makeAnimations, args=[animationsToPublish])
-            thread.start()     
+
+        if started:
+            return
+        
+        started = True
+        contentLength = int(self.headers['Content-Length'])
+        recievedData = json.loads(self.rfile.read(contentLength).decode('utf-8'))
+        bulkPublishAnimationsAsync(recievedData["animations"], recievedData["isGroup"]) #new thread so client isn't waiting on message back from server
 
     def log_message(self, *args):
         pass
-        
+    
+clearScreen()
+cookie = input("Cookie: ")
+clearScreen()
+
+print("localhost started you may start the plugin.")
 server = HTTPServer(("localhost", 6969), Requests)
-
-os.system("cls")
-cookie = input("cookie: ")
-
-xsrf = requests.post(
-    "https://auth.roblox.com/v2/logout",
-    cookies={".ROBLOSECURITY": cookie}
-).headers["X-CSRF-TOKEN"]
-
-os.system("cls")
-groupId = input("group id leave blank and press enter if none: ")
-
-os.system("cls")
-print("localhost started connect the plugin")
 server.serve_forever()
