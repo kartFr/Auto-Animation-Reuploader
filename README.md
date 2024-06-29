@@ -1,3 +1,4 @@
+feel free to join the discord to chat or get support: https://discord.gg/DhdCWJukWn
 # [Latest release](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 
 # info
