@@ -1,7 +1,7 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBXD2672305AC264DD7B0D171E1109B2821">
+	<Item class="Folder" referent="RBX71CA035AE3454A69846866EF3326F816">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -10,7 +10,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBX087A379E4C2044D3955DAEF6D20CA0DE">
+		<Item class="Script" referent="RBXF8BEAA94EFB84F6788957CC98F2C5A1A">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -34,6 +34,7 @@ local notificationUi = script.NotificationUi
 local gui = script.Frame
 local notificationId = 0
 local started = false
+local busy = false
 
 local widget = plugin:CreateDockWidgetPluginGui(
 	"spoofer",
@@ -87,107 +88,93 @@ local function sendNotification(title: string, message: string, titleColor: Colo
 	task.delay(2, notification.Destroy, notification)
 end
 
+local function try(...)
+	local success, result
+	for i=1, 3 do
+		if success then break end
+		if i > 1 then task.wait(1) end
+		success, result = pcall(...)
+	end
+	return success, result
+end
+
 pluginButton.Click:Connect(function()
 	widget.Enabled = not widget.Enabled
 end)
 
 gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 	if game.CreatorId == 0 then sendNotification("Error", "Publish game to group/profile.") return end
-	if started then sendNotification("Error", "Plugin already connected.") return end
+	if busy then sendNotification("Busy", "Plugin is busy.") return end
 	local localHostStarted = pcall(HttpService.GetAsync, HttpService, `http://localhost:{ANIMATIONLOCALHOST}`)
 	if not localHostStarted then sendNotification("Error", "Could not connect to local host.") return end
 	
-	started = true
+	busy = true
 	sendNotification("Connected", "Successfully connected to localhost", Color3.new(0, 1, 0))
 	
-	local animationsQueried = 0
-	local animationCount = 0
-	local animations = {}
-	local animationMap = {}
+	local animationsToQuery = {}
+	local animationInstances = {}
 	local skippedAnimations = {}
-	local rateLimited = false
-	local rateSignal = Signal.new()
-	
+
 	for i,v in game:GetDescendants() do
 		if not v:IsA("Animation") then continue end
 		local id = string.gsub(v.AnimationId, "%D", "")
-		if id == "" or id == "0" then table.insert(skippedAnimations, v) continue end
-		if animationMap[id] then table.insert(animationMap[id], v) continue end
-			
-		animationMap[id] = {}
-		animationCount += 1
-		
-		table.insert(animationMap[id], v)
-		
-		task.spawn(function()
-			local productInfo
-			local index = 0
-			
-			while index < 3 do
-				if rateLimited then rateSignal:Wait() end
-				local success
-				
-				success, productInfo  = pcall(MarketPlaceService.GetProductInfo, MarketPlaceService, id)
-				if success then break end
-				
-				if productInfo == "MarketplaceService:getProductInfo() failed because HTTP 429 (Too Many Requests)" then
-					if not rateLimited then
-						rateLimited = true
-						warn("rate limit reached continuing in 60 seconds.")
-						task.wait(60)
-						rateLimited = false 
-						rateSignal:Fire() 
-						rateSignal:DisconnectAll() 
-					end
-					
-					continue
-				end
-				
-				if index == 3 then
-					warn(`Failed getting product info from {id}.`)
-					animationCount -= 1
-					table.insert(skippedAnimations, v)
-					
-					return
-				end
-				
-				warn(`Error getting product info from {id} retrying in 1 seconds.`)
-				task.wait(1)
-				index += 1
-			end
-			
-			if productInfo.AssetTypeId ~= 24 or productInfo.Creator.Id == 1 or productInfo.Creator.Id == game.CreatorId then -- 24 is the AssetId for animations and UserId 1 is roblox
-				animationCount -= 1 
-				return 
-			end 
-			
-			animations[id] = productInfo.Name
-			animationsQueried += 1
-			warn(`Looped through {animationsQueried} different animations.`)
-		end)
+		if #id <= 3 then table.insert(skippedAnimations, v) continue end
+		if animationInstances[id] then table.insert(animationInstances[id], v) continue end
+
+		animationInstances[id] = {}
+
+		table.insert(animationInstances[id], v)
+		table.insert(animationsToQuery, id)
 	end
 	
-	while animationCount ~= animationsQueried do task.wait() end
+	local animationsBeingQueried = #animationsToQuery
+	local animationsSucessfullyQueried = 0
+	local completedSignal = Signal.new()
+	local animationsToSend = {}
+
+	task.spawn(function()
+		for i, animationId in animationsToQuery do
+			task.spawn(function()
+				local success, result = try(MarketPlaceService.GetProductInfo, MarketPlaceService, animationId)
+				if typeof(result) == "table" and result.AssetTypeId == 24 and result.Creator.Id ~= 1 and result.Creator.Id ~= game.CreatorId then -- 24 is animation assetid and 1 is roblox
+					animationsToSend[animationId] = result.Name
+					animationsSucessfullyQueried += 1 
+					warn(`Looped through {animationsSucessfullyQueried} different animations.`)
+				elseif typeof(result) ~= "table" then
+					warn(`Failed getting product info from {animationId}. Error: {result}`)
+					for i,v in animationInstances[animationId] do table.insert(skippedAnimations, v) end
+				end 
+
+				animationsBeingQueried -= 1
+				if animationsBeingQueried == 0 then completedSignal:Fire() end
+			end)
+
+			task.wait(60/350) --throttle, in robloxs words: "Please don't issue more than 400 API requests/minute with server scripts and no more than 300 API requests/minute with local scripts."
+		end
+	end)
 	
-	sendNotification("Notification", `Sending {animationsQueried} animations to localhost`, Color3.new(0, 1, 0))
-	warn(`Sending {animationsQueried} animations to localhost. Failed to send {#skippedAnimations} animation instances: `, table.unpack(skippedAnimations))
+	completedSignal:Wait()
+	sendNotification("Notification", `Sending {animationsSucessfullyQueried} animations to localhost`, Color3.new(0, 1, 0))
 	
-	local successfullySentAnimations
-	
-	for i=1, 3 do
-		if successfullySentAnimations then break end
-		successfullySentAnimations = pcall(
-			HttpService.PostAsync, 
-			HttpService, 
-			`http://localhost:{ANIMATIONLOCALHOST}`, 
-			HttpService:JSONEncode({isGroup = game.CreatorType == Enum.CreatorType.Group and game.CreatorId, animations = animations})
-		)
+	if animationsSucessfullyQueried == 0 then
+		warn(`All animations that are able to be sent are owned. Failed to send {#skippedAnimations} animation instances: `, table.unpack(skippedAnimations))
+		busy = false
+		return
 	end
 	
+	warn(`Sending {animationsSucessfullyQueried} animations to localhost. Failed to send {#skippedAnimations} animation instances: `, table.unpack(skippedAnimations))
+	
+	local successfullySentAnimations = try(
+		HttpService.PostAsync, 
+		HttpService, 
+		`http://localhost:{ANIMATIONLOCALHOST}`, 
+		HttpService:JSONEncode({isGroup = game.CreatorType == Enum.CreatorType.Group and game.CreatorId, animations = animationsToSend})
+	)
+
 	if not successfullySentAnimations then 
 		sendNotification("Stopped Uploading", "Failed to send animations to localhost.") 
 		warn("Failed to send animations to localhost.")
-		started = false 
+		busy = false
 		return 
 	end
 	
@@ -200,81 +187,74 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 		animationsToChange = HttpService:JSONDecode(animationsToChange)
 		
 		for oldId, newId in animationsToChange do
-			for i, animation in animationMap[oldId] do
+			for i, animation in animationInstances[oldId] do
 				animation.AnimationId = "rbxassetid://" .. newId
 			end
 			
-			warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", table.unpack(animationMap[oldId]))
+			warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", table.unpack(animationInstances[oldId]))
 		end
 	end
 	
 	warn("Finished reuploading all animations.")
-	started = false
+	busy = false
 end)
 
 gui.ImageLabel.GetAnimationButton.MouseButton1Down:Connect(function()
-	local animations = {}
-	local rateLimited = false
-	local rateSignal = Signal.new()
-	local animationsQueried = 0
-	local animationCount = 0
-	
+	if busy then sendNotification("Busy", "Plugin is busy.") return end
 	warn("getting all unowned animations please be patient.")
 	
+	local animationsToQuery = {}
+	local animationInstances = {}
+	local unownedAnimations = {}
+	local timeStarted = os.clock()
+
 	for i,v in game:GetDescendants() do
 		if not v:IsA("Animation") then continue end
 		local id = string.gsub(v.AnimationId, "%D", "")
-		if id == "" or id == "0" then table.insert(animations, v) continue end
-		
-		animationCount += 1
+		if #id <= 3 then table.insert(unownedAnimations, v) continue end
+		if animationInstances[id] then table.insert(animationInstances[id], v) continue end
 
-		task.spawn(function()
-			local productInfo
-			local index = 0
+		animationInstances[id] = {}
 
-			while index < 3 do
-				if rateLimited then rateSignal:Wait() end
-				local success
+		table.insert(animationInstances[id], v)
+		table.insert(animationsToQuery, id)
+	end
 
-				success, productInfo  = pcall(MarketPlaceService.GetProductInfo, MarketPlaceService, id)
-				if success then break end
+	local animationsBeingQueried = #animationsToQuery
+	local animationsSucessfullyQueried = 0
+	local completedSignal = Signal.new()
 
-				if productInfo == "MarketplaceService:getProductInfo() failed because HTTP 429 (Too Many Requests)" then
-					if not rateLimited then
-						rateLimited = true
-						warn("rate limit reached continuing in 60 seconds.")
-						task.wait(60)
-						rateLimited = false 
-						rateSignal:Fire() 
-						rateSignal:DisconnectAll() 
+	task.spawn(function()
+		for i, animationId in animationsToQuery do
+			task.spawn(function()
+				local success, result = try(MarketPlaceService.GetProductInfo, MarketPlaceService, animationId)
+				if typeof(result) ~= "table" then warn(`Failed getting product info from {animationId}.`) 
+				elseif typeof(result) == "table" and result.AssetTypeId == 24 and result.Creator.Id ~= 1 and result.Creator.Id ~= game.CreatorId then -- 24 is animation assetid and 1 is roblox
+					for i,v in animationInstances[animationId] do
+						animationsSucessfullyQueried += 1
+						table.insert(unownedAnimations, v)
 					end
+				end 
 
-					continue
-				end
+				animationsBeingQueried -= 1
+				if animationsBeingQueried == 0 then completedSignal:Fire() end
+			end)
 
-				if index == 3 then
-					animationCount -= 1
-					table.insert(animations, v)
-
-					return
-				end
-
-				task.wait(1)
-				index += 1
-			end
-
-			if productInfo.AssetTypeId ~= 24 or productInfo.Creator.Id == 1 or productInfo.Creator.Id == game.CreatorId then -- 24 is the AssetId for animations and UserId 1 is roblox
-				animationCount -= 1 
-				return 
-			end 
-
-			animationsQueried += 1
-			table.insert(animations, v)
-		end)
+			task.wait(60/350) --throttle, in robloxs words: "Please don't issue more than 400 API requests/minute with server scripts and no more than 300 API requests/minute with local scripts."
+		end
+	end)
+	
+	local reminderThread
+	local function remind()
+		warn(`still getting all unowned animations please be patient. Seconds passed: {math.floor(os.clock() - timeStarted)}. Number of animations Found: {animationsSucessfullyQueried}`)
+		reminderThread = task.delay(30, remind)
 	end
 	
-	while animationCount ~= animationsQueried do task.wait() end
-	warn("Unowned animation ids(click name to select in explorer): ", table.unpack(animations))
+	reminderThread = task.delay(30, remind)
+	completedSignal:Wait()
+	warn(`{animationsSucessfullyQueried} unowned animation instances(click name to select in explorer): `, table.unpack(unownedAnimations))
+	coroutine.close(reminderThread)
+	busy = false
 end)
 
 gui.ImageLabel.SoundButton.MouseButton1Down:Connect(function()
@@ -283,7 +263,7 @@ end)]]></ProtectedString>
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="ScreenGui" referent="RBXCD643A14BE224AD5B4F0F5D102F4072F">
+			<Item class="ScreenGui" referent="RBX4A941C6DFD7E43E79A634298AAEC0C07">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<bool name="AutoLocalize">true</bool>
@@ -306,7 +286,7 @@ end)]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 					<token name="ZIndexBehavior">1</token>
 				</Properties>
-				<Item class="Frame" referent="RBX5DEEF912EF14461AAB62DB442065068B">
+				<Item class="Frame" referent="RBXD4F0ABF200BF4E95B2B1DBF0D73DFD89">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -369,7 +349,7 @@ end)]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="UIListLayout" referent="RBX3A2ABED4A14446D185153495E47E3DBB">
+					<Item class="UIListLayout" referent="RBX240E58A430154447858D6C767C7CEE73">
 						<Properties>
 							<BinaryString name="AttributesSerialize"></BinaryString>
 							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -393,7 +373,7 @@ end)]]></ProtectedString>
 					</Item>
 				</Item>
 			</Item>
-			<Item class="Frame" referent="RBX3CBCE416B5064E6296DA31A7F8F81432">
+			<Item class="Frame" referent="RBXC27E05D2A5F64B9FB0D3E9F7B96653AC">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -456,7 +436,7 @@ end)]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="TextLabel" referent="RBXE27C33DB083946E984CA95E386718EFC">
+				<Item class="TextLabel" referent="RBX3EB3C9BF814D40F291546D5E9DE8B481">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -550,7 +530,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="TextLabel" referent="RBX7B0A7644C3C04296BEB291E60C5880AD">
+				<Item class="TextLabel" referent="RBX969168C1BA8B4683B53464F720321DA1">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -644,7 +624,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="UICorner" referent="RBX4CC196687BE5420BA0DAD789CB177C85">
+				<Item class="UICorner" referent="RBXDBDF8F59D4F741F0827B0B1DBDD457C5">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -659,7 +639,7 @@ end)]]></ProtectedString>
 					</Properties>
 				</Item>
 			</Item>
-			<Item class="Sound" referent="RBXFF2EC231120E4610ACBB37350363E335">
+			<Item class="Sound" referent="RBXD041C906D15144DCB822FFD8FC010079">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -683,7 +663,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBX3180BEB79951440583EE566B6A616DD5">
+			<Item class="Sound" referent="RBX9608A401CE7D4185B210001C6C54B1DE">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -707,7 +687,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBXF9380D45302149EAA3862CD62FFF584D">
+			<Item class="Sound" referent="RBXCD51FBE651B7497ABC9587E5BAE782C3">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -731,7 +711,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="ModuleScript" referent="RBXEEB8BDD9A13249708F74CD38C6E0C640">
+			<Item class="ModuleScript" referent="RBX5C90D9FD7DFC40E48C22E33A18975F45">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -923,7 +903,7 @@ return Signal]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
 			</Item>
-			<Item class="Frame" referent="RBX517FF10AF4724CDDB6A7EB38D0CF54E9">
+			<Item class="Frame" referent="RBX07203DAB87854B768CED4717C6ACE929">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -986,7 +966,7 @@ return Signal]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="ImageLabel" referent="RBXDB2614751DBD4AB2AE6D4CFD8E89C39E">
+				<Item class="ImageLabel" referent="RBXFAF6EE05AF294748B3DAAC113BD1908F">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -1082,7 +1062,7 @@ return Signal]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="TextButton" referent="RBXF3154D08C4A04A2686373B7C9C9AB947">
+					<Item class="TextButton" referent="RBX609611AB034D49AAA7E4A7A9E45F57CB">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1181,7 +1161,7 @@ return Signal]]></ProtectedString>
 							<int name="ZIndex">1</int>
 						</Properties>
 					</Item>
-					<Item class="TextButton" referent="RBX049EFE943AD64C5ABB0B6CBC47B32EF6">
+					<Item class="TextButton" referent="RBX9967C45A3F0F43C38CE4B0B6DE80BAD8">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1280,7 +1260,7 @@ return Signal]]></ProtectedString>
 							<int name="ZIndex">1</int>
 						</Properties>
 					</Item>
-					<Item class="TextButton" referent="RBX4686450C21474AC38806A002E960D2F9">
+					<Item class="TextButton" referent="RBX92D2B71AFDE9412895BF873F39C8E840">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1379,7 +1359,7 @@ return Signal]]></ProtectedString>
 							<int name="ZIndex">1</int>
 						</Properties>
 					</Item>
-					<Item class="TextButton" referent="RBX54E6CF71504745B9811729B1B24D763E">
+					<Item class="TextButton" referent="RBXD7B821E2E6A54B9AB733428F3610D039">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1479,7 +1459,7 @@ return Signal]]></ProtectedString>
 						</Properties>
 					</Item>
 				</Item>
-				<Item class="TextLabel" referent="RBX4395527FDE8346F8B34929850F2139A9">
+				<Item class="TextLabel" referent="RBXB1B50A5FF2D3468DB409EDD845C48B05">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
