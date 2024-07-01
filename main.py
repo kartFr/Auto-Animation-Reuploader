@@ -28,6 +28,7 @@ finished = False
 cookie = None
 totalAnimations = 0
 animationsUploaded = 0
+canServe = True
 
 XSRFTokenEvent = threading.Event()
 fetchingXSRFToken = False
@@ -139,8 +140,7 @@ def publishAnimation(animation, name, groupId):
 def publishAnimationAsync(animation, name, groupId):
     newThread = threading.Thread(target= publishAnimation, args=(animation, name, groupId,))
     newThread.start()
-    time.sleep(1/7) #throttle(420 a minute XDXD) because bad things happen when you are sending too many requests at once without a proxy. Someone can pull and I will merge with your permission if you want to make it faster.
-    #I left 80 for some room for errors. Should be fine as long as you don't have more than 80 animations failing within a minute.
+    time.sleep(60/400) #throttle, because this is what roblox reccomends(400 a minute). Someone can pull and I will merge with your permission if its stable if you want to make it faster.
 
 def bulkPublishAnimations(animations, groupId):
     global totalAnimations
@@ -175,8 +175,11 @@ class Requests(BaseHTTPRequestHandler):
         global completedAnimations
 
         if finished and len(completedAnimations) == 0:
+            global canServe
+
             self.wfile.write(bytes(("done").encode("utf-8")))
-            print("\033[0mYou may close this terminal.")
+            #print("\033[0mYou may close this terminal.")
+            canServe = False
         else:
             currentAnimations = completedAnimations
             completedAnimations = {}
@@ -203,8 +206,10 @@ class Requests(BaseHTTPRequestHandler):
     
 clearScreen()
 cookie = input("Cookie: ")
-clearScreen()
 
+clearScreen()
 print("localhost started you may start the plugin.")
+
 server = HTTPServer(("localhost", 6969), Requests)
-server.serve_forever()
+while canServe:
+    server.handle_request()
