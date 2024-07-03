@@ -90,8 +90,9 @@ def publishAnimation(animation, name, groupId):
         try:
             animationData = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + animation).content
         except:
+            time.sleep(1)
             continue
-        
+    
         try:
             publishRequest =  requests.post(
                 f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={name}&description=kartfr🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{"&groupId=" + str(groupId) if groupId else ""}",
@@ -100,8 +101,9 @@ def publishAnimation(animation, name, groupId):
                 cookies={".ROBLOSECURITY": cookie}
             )
         except:
+            time.sleep(1)
             continue
-
+       
         content = publishRequest.content.decode("utf-8")
         if content.isnumeric():
             animationId = content
@@ -112,7 +114,7 @@ def publishAnimation(animation, name, groupId):
                 time.sleep(1)
                 continue
             case 403: # Forbidden
-                if publishRequest.reason == "XSRF Token Validation Failed":
+                if content == "XSRF Token Validation Failed":
                     getXSRFToken()
                     continue
 
@@ -120,7 +122,7 @@ def publishAnimation(animation, name, groupId):
             case "Inappropriate name or description.":
                 name = "[Censored Name]"
             case _:
-                print(f"\033[31mError found please report: {content}") #Hopefully this will be fine
+                print(f"\033[31mError found please report:\nCode: {publishRequest.status_code}\nReason: {publishRequest.reason}\nContent: {content}") #Hopefully this will be fine
                 #print(publishRequest.status_code, publishRequest.reason)
 
         time.sleep(1)
@@ -165,6 +167,34 @@ def bulkPublishAnimationsAsync(animations, groupId):
     newThread = threading.Thread(target=bulkPublishAnimations, args=(animations, groupId,))
     newThread.start()
 
+def isValidCookie():
+    global cookie
+    isLoggedIn = requests.get(
+        "https://www.roblox.com/mobileapi/userinfo",
+        cookies={".ROBLOSECURITY": cookie}
+    )
+
+    try:
+        json.loads(isLoggedIn.content)
+    except:
+        return False
+    return True
+
+def getSavedCookie():
+    cookieFile = None
+    try:
+        cookieFile = open("cookie.txt")
+    except:
+        return None
+    return cookieFile.read()
+
+def updateSavedCookie():
+    global cookie
+    
+    cookieFile = open("cookie.txt", "w")
+    cookieFile.write(cookie)
+    cookieFile.close()
+
 class Requests(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -203,11 +233,27 @@ class Requests(BaseHTTPRequestHandler):
 
     def log_message(self, *args):
         pass
-    
-clearScreen()
-cookie = input("Cookie: ")
 
 clearScreen()
+cookie = getSavedCookie()
+
+if cookie and not isValidCookie():
+    print("\033[31mCookie expired.")
+    cookie = None
+
+if not cookie:
+    while True:
+        cookie = input("\033[0mCookie: ")
+        clearScreen()
+
+        if isValidCookie():
+            break
+        elif cookie.find("WARNING:-DO-NOT-SHARE-THIS.") == -1:
+            print("\033[31mNo Roblox warning in cookie. Include the entire .ROBLOSECURITY warning.")
+        else:
+            print("\033[31mCookie is invalid.")
+
+updateSavedCookie()
 print("localhost started you may start the plugin.")
 
 server = HTTPServer(("localhost", 6969), Requests)
