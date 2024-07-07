@@ -1,5 +1,5 @@
 # Animation Reuploader
-![Downloads](https://img.shields.io/github/downloads/kartfr/Auto-Animation-Reuploader/total)
+![Downloads](https://img.shields.io/github/downloads/kartfr/Auto-Animation-Reuploader/total-orange)
 [![Lastest](https://img.shields.io/github/v/release/kartfr/Auto-Animation-Reuploader)](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 [![Discord](https://img.shields.io/discord/1238572493925646347?label=Discord&logo=discord&logoColor=white)](https://discord.gg/DhdCWJukWn)
 [![License](https://img.shields.io/github/license/kartFr/Auto-Animation-Reuploader)](https://github.com/kartFr/Auto-Animation-Reuploader?tab=GPL-3.0-1-ov-file)
