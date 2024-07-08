@@ -11,5 +11,5 @@ if __name__ == '__main__':
         for fileName in latestDownload.namelist():
             open(fileName, "wb").write(latestDownload.open(fileName).read())
 
-    subprocess.Popen(["main.exe"])
+    subprocess.Popen(["Animation Reuploader.exe"])
     
