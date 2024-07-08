@@ -263,10 +263,9 @@ if __name__ == '__main__':
     clearScreen()
     cookie = getSavedCookie()
 
-    currentVersion = getCurrentVersion() # incase reading the file or sending the request fails.
     latestVersion = getLatestVersion()
-    
-    if currentVersion & latestVersion & currentVersion != latestVersion:
+
+    if (latestVersion is not None) & (getCurrentVersion()  != latestVersion): # incase sending the request fails.
         print("\033[33mOut of date. New update is available on github.")
         update = input("\033[0mUpdate?(y/n): ")
         
