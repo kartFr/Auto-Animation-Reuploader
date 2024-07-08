@@ -15,10 +15,12 @@
 #
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import subprocess
 import threading
 import requests
 import json
 import time
+import sys
 import os
 
 completedEvent = threading.Event()
@@ -35,7 +37,7 @@ fetchingXSRFToken = False
 XSRFToken = None
 
 def clearScreen():
-    os.system("cls" if os.name == "nt" else "clear") #nt is windows, clear is for linux and mac. (this is the only mac and linux incompatibility in the previous versions that I was too lazy to fix lmao)
+    os.system("cls" if os.name == "nt" else "clear")
 
 def getXSRFToken():
     global XSRFToken
@@ -75,7 +77,7 @@ def publishAnimation(animation, name, groupId):
     global XSRFToken
     global cookie
 
-    animationId = None
+    animationId = False
 
     if not XSRFToken:
         getXSRFToken()
@@ -83,10 +85,7 @@ def publishAnimation(animation, name, groupId):
     for i in range(0, 3):
         if fetchingXSRFToken:
             getXSRFToken()
-
-        animationData = None
-        publishRequest = None
-
+            
         try:
             animationData = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + animation).content
         except:
@@ -181,7 +180,6 @@ def isValidCookie():
     return True
 
 def getSavedCookie():
-    cookieFile = None
     try:
         cookieFile = open("cookie.txt")
     except:
@@ -191,9 +189,36 @@ def getSavedCookie():
 def updateSavedCookie():
     global cookie
     
-    cookieFile = open("cookie.txt", "w")
-    cookieFile.write(cookie)
-    cookieFile.close()
+    try:
+        cookieFile = open("cookie.txt", "w")
+        cookieFile.write(cookie)
+        cookieFile.close()
+    except:
+        print("\033[33mSaving cookie failed. Try running as administrator.")
+
+def getCurrentVersion():
+    try:
+        versionFile = open("version.txt")
+    except:
+        return
+    return versionFile.read()
+
+def getLatestVersion():
+    try:
+        versionRequest = requests.get("https://api.github.com/repos/kartFr/Auto-Animation-Reuploader/releases/latest")
+    except:
+        return
+    return json.loads(versionRequest.content)["name"]
+
+def updateFile():
+    clearScreen()
+    print("\033[33mUpdating. Please be patient.")
+    try:
+        dataPath = sys._MEIPASS
+    except:
+        dataPath = os.path.dirname(os.path.abspath(__file__)) # so i can test when not packaged
+    subprocess.Popen(["Python", os.path.join(dataPath, "updater.py")])
+    sys.exit()
 
 class Requests(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -234,28 +259,38 @@ class Requests(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-clearScreen()
-cookie = getSavedCookie()
-
-if cookie and not isValidCookie():
-    print("\033[31mCookie expired.")
-    cookie = None
-
-if not cookie:
-    while True:
-        cookie = input("\033[0mCookie: ")
-        clearScreen()
-
-        if isValidCookie():
-            break
-        elif cookie.find("WARNING:-DO-NOT-SHARE-THIS.") == -1:
-            print("\033[31mNo Roblox warning in cookie. Include the entire .ROBLOSECURITY warning.")
+if __name__ == '__main__':
+    clearScreen()
+    cookie = getSavedCookie()
+    
+    if getCurrentVersion() != getLatestVersion():
+        print("\033[33mOut of date. New update is available on github.")
+        update = input("\033[0mUpdate?(y/n): ")
+        
+        if update == "y":
+            updateFile()
         else:
-            print("\033[31mCookie is invalid.")
+            clearScreen()
 
-updateSavedCookie()
-print("localhost started you may start the plugin.")
+    if cookie and not isValidCookie():
+        print("\033[31mCookie expired.")
+        cookie = None
 
-server = HTTPServer(("localhost", 6969), Requests)
-while canServe:
-    server.handle_request()
+    if not cookie:
+        while True:
+            cookie = input("\033[0mCookie: ")
+            clearScreen()
+
+            if isValidCookie():
+                updateSavedCookie()
+                break
+            elif cookie.find("WARNING:-DO-NOT-SHARE-THIS.") == -1:
+                print("\033[31mNo Roblox warning in cookie. Include the entire .ROBLOSECURITY warning.")
+            else:
+                print("\033[31mCookie is invalid.")  
+
+    print("\033[0mlocalhost started you may start the plugin.")
+
+    server = HTTPServer(("localhost", 6969), Requests)
+    while canServe:
+        server.handle_request()

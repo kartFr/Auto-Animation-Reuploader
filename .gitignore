@@ -1,0 +1,7 @@
+*.spec
+*.ico
+pyinstaller*
+version*
+release
+dist
+build
