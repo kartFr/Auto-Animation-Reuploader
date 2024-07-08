@@ -262,8 +262,11 @@ class Requests(BaseHTTPRequestHandler):
 if __name__ == '__main__':
     clearScreen()
     cookie = getSavedCookie()
+
+    currentVersion = getCurrentVersion() # incase reading the file or sending the request fails.
+    latestVersion = getLatestVersion()
     
-    if getCurrentVersion() != getLatestVersion():
+    if currentVersion & latestVersion & currentVersion != latestVersion:
         print("\033[33mOut of date. New update is available on github.")
         update = input("\033[0mUpdate?(y/n): ")
         
