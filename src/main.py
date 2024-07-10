@@ -32,12 +32,12 @@ totalAnimations = 0
 animationsUploaded = 0
 canServe = True
 
+def clearScreen():
+    os.system("cls" if os.name == "nt" else "clear")
+
 XSRFTokenEvent = threading.Event()
 fetchingXSRFToken = False
 XSRFToken = None
-
-def clearScreen():
-    os.system("cls" if os.name == "nt" else "clear")
 
 def getXSRFToken():
     global XSRFToken
@@ -231,10 +231,12 @@ class Requests(BaseHTTPRequestHandler):
 
         if finished and len(completedAnimations) == 0:
             global canServe
+            global started
 
             self.wfile.write(bytes(("done").encode("utf-8")))
-            #print("\033[0mYou may close this terminal.")
-            canServe = False
+            print("\033[0mYou may close this terminal. (You can spoof again without restarting if you need to.)")
+            finished = False
+            started = False
         else:
             currentAnimations = completedAnimations
             completedAnimations = {}
@@ -247,32 +249,31 @@ class Requests(BaseHTTPRequestHandler):
         self.end_headers()
 
         global started
-
         if started:
             return
         
         started = True
         contentLength = int(self.headers['Content-Length'])
         recievedData = json.loads(self.rfile.read(contentLength).decode('utf-8'))
+        clearScreen()
+        print("\033[33mUploading animations.")
         bulkPublishAnimationsAsync(recievedData["animations"], recievedData["isGroup"]) #new thread so client isn't waiting on message back from server
 
     def log_message(self, *args):
         pass
 
 if __name__ == '__main__':
-    clearScreen()
     cookie = getSavedCookie()
-
     latestVersion = getLatestVersion()
+    clearScreen()
 
-    if (latestVersion is not None) & (getCurrentVersion()  != latestVersion): # incase sending the request fails.
+    if (latestVersion is not None) & (getCurrentVersion()  != latestVersion): # incase sending the request to github fails.
         print("\033[33mOut of date. New update is available on github.")
         update = input("\033[0mUpdate?(y/n): ")
         
         if update == "y":
             updateFile()
-        else:
-            clearScreen()
+        clearScreen()
 
     if cookie and not isValidCookie():
         print("\033[31mCookie expired.")
@@ -294,5 +295,4 @@ if __name__ == '__main__':
     print("\033[0mlocalhost started you may start the plugin.")
 
     server = HTTPServer(("localhost", 6969), Requests)
-    while canServe:
-        server.handle_request()
+    server.serve_forever()
