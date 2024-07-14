@@ -30,7 +30,6 @@ finished = False
 cookie = None
 totalAnimations = 0
 animationsUploaded = 0
-canServe = True
 
 def clearScreen():
     os.system("cls" if os.name == "nt" else "clear")
@@ -147,7 +146,9 @@ def bulkPublishAnimations(animations, groupId):
     global totalAnimations
     global completedEvent
     global finished
+    global animationsUploaded
 
+    animationsUploaded = 0
     totalAnimations = len(animations)
     startTime = time.time()
 
@@ -194,7 +195,7 @@ def updateSavedCookie():
         cookieFile.write(cookie)
         cookieFile.close()
     except:
-        print("\033[33mSaving cookie failed. Try running as administrator.")
+        print("\033[33mSaving cookie failed.")
 
 def getCurrentVersion():
     try:
@@ -230,7 +231,6 @@ class Requests(BaseHTTPRequestHandler):
         global completedAnimations
 
         if finished and len(completedAnimations) == 0:
-            global canServe
             global started
 
             self.wfile.write(bytes(("done").encode("utf-8")))
