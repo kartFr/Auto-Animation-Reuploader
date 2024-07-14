@@ -248,19 +248,24 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 
 				if scriptLengthChange[animationScript] then
 					for i,v in scriptLengthChange[animationScript]  do
-						if i < idStart then
-							idStart += v
+						local index = v[1]
+						local difference = v[2]
+						
+						if index < idStart then
+							idStart += difference
 						end
 
-						if i < idEnd then
-							idEnd += v
+						if index < idEnd then
+							idEnd += difference
 						end
 					end
 				end
 
 				animationScript.Source = source:sub(1, idStart - 1) .. newId .. source:sub(idEnd + 1)
 				if not scriptLengthChange[animationScript] then scriptLengthChange[animationScript] = {} end
-				scriptLengthChange[animationScript][idStart] = #newId - #oldId
+				local idDifference = #newId - #oldId
+				if idDifference == 0 then continue end
+				table.insert(scriptLengthChange[animationScript], {idStart, idDifference})
 			end
 
 			warn(`Changed all animation ids: {oldId} ; {newId}`, "Scripts:", table.unpack(scriptsChanged))
