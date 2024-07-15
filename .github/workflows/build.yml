@@ -14,7 +14,7 @@ inputs:
     description: "Release body"
 
 on:
-  workflow_dispact:
+  workflow_dispatch:
 
 jobs:
   build:
