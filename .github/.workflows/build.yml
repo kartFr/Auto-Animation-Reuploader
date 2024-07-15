@@ -1,11 +1,14 @@
 name: Build Release
-description: Builds the release files, makes it very easy for me because im a bum.
+description: Builds the release files
 author: kartfr
 
 inputs:
   version:
     required: true
-    description: "version of release"
+    description: "Version of release"
+  body:
+    required: true
+    description: "Release body"
 
 jobs:
   build:
@@ -13,15 +16,41 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Set Up Python
         uses: actions/setup-python@v5
         with:
           python-version: "latest"
-      - name: Install dependencies
+
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Build EXE
         run: |
           pyinstaller main.spec
-        
+
+      - name: Create Version File
+        run: echo ${{ inputs.version }} > VERSION.txt 
+
+      - name: Zip The Files
+        run: |
+          zip -r AnimationStealer.zip LICENSE.txt VERSION.txt "Animation Stealer.exe"
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ inputs.version }}
+          release_name: ${{ inputs.version }}
+          body: ${{ inputs.body }}
+
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./AnimationStealer.zip
+          asset_name: AnimationStealer.zip
+          asset_content_type: application/zip
