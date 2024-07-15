@@ -26,14 +26,14 @@ jobs:
       - name: Build EXE
         uses: JackMcKew/pyinstaller-action-windows@main
         with:
-          path: ./dist
+          path: .
 
       - name: Create Version File
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
 
       - name: Zip The Files
         run: |
-          ls .
+          ls ./dist
           zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "dist/Animation Reuploader.exe"
 
       - name: Create Release
