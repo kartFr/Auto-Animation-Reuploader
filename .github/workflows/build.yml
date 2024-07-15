@@ -5,16 +5,18 @@ author: kartfr
 permissions:
     contents: read
 
-inputs:
-  version:
-    required: true
-    description: "Version of release"
-  body:
-    required: true
-    description: "Release body"
-
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: "Version of release"
+        
+      body:
+        type: string
+        required: true
+        description: "Release body"
 
 jobs:
   build:
