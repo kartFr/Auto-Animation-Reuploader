@@ -132,7 +132,7 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 				local id = scriptSource:sub(idStart, idEnd)
 				lastEnd = idEnd + 1
 
-				if #id <= 3 or #id > 12 then continue end
+				if #id <= 7 or #id >= 13 then continue end
 				if scriptAnimationInfo[id] then table.insert(scriptAnimationInfo[id], { idStart, idEnd, v }) continue end
 
 				scriptAnimationInfo[id] = {}
@@ -143,7 +143,7 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 		end
 
 		local id = string.gsub(v.AnimationId, "%D", "")	
-		if #id <= 3 or #id >= 13 then table.insert(skippedAnimations, v) continue end
+		if #id <= 7 or #id >= 13 then table.insert(skippedAnimations, v) continue end
 		if animationInstances[id] then table.insert(animationInstances[id], v) continue end
 		animationInstances[id] = {}
 
