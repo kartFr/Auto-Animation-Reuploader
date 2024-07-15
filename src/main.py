@@ -106,7 +106,7 @@ def publishAnimation(animation, name, groupId):
         if content.isnumeric():
             animationId = content
             break
-        print(publishRequest.status_code, publishRequest.reason)
+        
         match publishRequest.status_code:
             case 500: # Internal Server Error
                 name = "[Censored Name]" # Even though i am detecting if the name is bad sometimes roblox likes to just give 500 internal server error instead of "innapropriate name or description"
