@@ -33,7 +33,7 @@ jobs:
 
       - name: Zip The Files
         run: |
-          ls ./dist
+          ls ./dist/windows
           zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "dist/Animation Reuploader.exe"
 
       - name: Create Release
