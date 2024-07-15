@@ -24,8 +24,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build EXE
         uses: JackMcKew/pyinstaller-action-windows@main
-        with:
-          spec: main.spec
 
       - name: Create Version File
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
