@@ -1,0 +1,8 @@
+name: Build Release
+author: kartfr
+description: Builds the release files, makes it very easy for me because im a bum.
+
+inputs:
+  version:
+    required: true
+    description: "version of release"
