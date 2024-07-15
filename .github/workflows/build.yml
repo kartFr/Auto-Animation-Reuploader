@@ -43,7 +43,7 @@ jobs:
 
       - name: Zip The Files
         run: |
-          zip -r AnimationStealer.zip LICENSE.txt VERSION.txt "Animation Stealer.exe"
+          zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "Animation Reuploader.exe"
 
       - name: Create Release
         uses: actions/create-release@v1
@@ -59,6 +59,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./AnimationStealer.zip
-          asset_name: AnimationStealer.zip
+          asset_path: ./AnimationReuploader.zip
+          asset_name: AnimationReuploader.zip
           asset_content_type: application/zip
