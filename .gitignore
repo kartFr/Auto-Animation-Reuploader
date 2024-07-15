@@ -1,6 +1,1 @@
-*.spec
 *.ico
-version*
-release
-dist
-build
