@@ -18,7 +18,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -35,9 +35,7 @@ jobs:
       - name: Create Version File
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
       - name: Zip The Files
-        run: |
-          ls ./dist/"Animation Reuploader"
-          zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt dist/"Animation Reuploader"
+        run: powershell Compress-Archive -Path LICENSE.txt, VERSION.txt, "dist\Animation Reuploader.exe" -DestinationPath AnimationReuploader.zip
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
