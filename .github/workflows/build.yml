@@ -22,6 +22,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Build EXE
         uses: JackMcKew/pyinstaller-action-windows@main
         with:
@@ -31,9 +32,7 @@ jobs:
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
 
       - name: Zip The Files
-        run: |
-          ls .
-          zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "src/dist/Animation Reuploader.exe"
+        run: zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "dist/Animation Reuploader.exe"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

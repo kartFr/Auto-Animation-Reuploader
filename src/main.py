@@ -93,7 +93,7 @@ def publishAnimation(animation, name, groupId):
     
         try:
             publishRequest =  requests.post(
-                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={name}&description=kartfr🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{"&groupId=" + str(groupId) if groupId else ""}",
+                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={name}&description=kartfr🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{'&groupId=' + str(groupId) if groupId else ''}",
                 animationData,
                 headers={"X-CSRF-TOKEN": XSRFToken,  "User-Agent": "RobloxStudio/WinInet"},
                 cookies={".ROBLOSECURITY": cookie}
