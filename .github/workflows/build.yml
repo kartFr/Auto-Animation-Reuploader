@@ -32,12 +32,10 @@ jobs:
           pip install -r requirements.txt
       - name: Build EXE
         run: pyinstaller main.spec
-      - name: Move EXE To Current Directory
-        run: mv "dist/Animation Reuploader.exe" .
       - name: Create Version File
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
       - name: Zip The Files
-        run: zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "Animation Reuploader.exe"
+        run: zip -rj AnimationReuploader.zip LICENSE.txt VERSION.txt "Animation Reuploader.exe"
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
