@@ -47,3 +47,4 @@ jobs:
           release_name: ${{ github.event.inputs.version }}
           body: ${{ github.event.inputs.body }}
           files: AnimationReuploader.zip
+          
