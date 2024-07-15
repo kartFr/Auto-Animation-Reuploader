@@ -37,7 +37,7 @@ jobs:
       - name: Zip The Files
         run: |
           ls ./dist/"Animation Reuploader"
-          zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt dist/"Animation Reuploader.exe"
+          zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt dist/"Animation Reuploader"
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
