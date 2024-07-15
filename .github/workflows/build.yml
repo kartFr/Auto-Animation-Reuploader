@@ -39,7 +39,7 @@ jobs:
           pyinstaller main.spec
 
       - name: Create Version File
-        run: echo ${{ inputs.version }} > VERSION.txt 
+        run: echo ${{ github.event.inputs.version }} > VERSION.txt 
 
       - name: Zip The Files
         run: |
@@ -50,9 +50,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ inputs.version }}
-          release_name: ${{ inputs.version }}
-          body: ${{ inputs.body }}
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          body: ${{ github.event.inputs.body }}
 
       - name: Upload Release Asset
         env:
