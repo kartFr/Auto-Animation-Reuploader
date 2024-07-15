@@ -1,6 +1,6 @@
 name: Build Release
-author: kartfr
 description: Builds the release files, makes it very easy for me because im a bum.
+author: kartfr
 
 inputs:
   version:
@@ -24,3 +24,4 @@ jobs:
       - name: Build EXE
         run: |
           pyinstaller main.spec
+        
