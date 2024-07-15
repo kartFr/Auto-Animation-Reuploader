@@ -18,24 +18,23 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set Up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12.4"
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
       - name: Build EXE
-        run: pyinstaller main.spec
+        uses: JackMcKew/pyinstaller-action-windows@main
+        with:
+          path: main.spec
+
       - name: Create Version File
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
+
       - name: Zip The Files
-        run: powershell Compress-Archive -Path LICENSE.txt, VERSION.txt, "dist\Animation Reuploader.exe" -DestinationPath AnimationReuploader.zip
+        run: |
+          ls .
+          zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt "src/dist/Animation Reuploader.exe"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
