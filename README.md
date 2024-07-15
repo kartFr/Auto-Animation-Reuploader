@@ -1,5 +1,5 @@
 # Animation Reuploader
-![Downloads](https://img.shields.io/github/downloads/kartfr/Auto-Animation-Reuploader/total?color=green)
+[![Downloads](https://img.shields.io/github/downloads/kartfr/Auto-Animation-Reuploader/total?color=green)](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 [![Lastest](https://img.shields.io/github/v/release/kartfr/Auto-Animation-Reuploader?color=green)](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest)
 [![Discord](https://img.shields.io/discord/1238572493925646347?label=Discord&logo=discord&logoColor=white&color=green)](https://discord.gg/XTEtUqPTat)
 [![License](https://img.shields.io/github/license/kartFr/Auto-Animation-Reuploader?color=green)](https://github.com/kartFr/Auto-Animation-Reuploader?tab=GPL-3.0-1-ov-file)
@@ -14,3 +14,6 @@ made by [kartFr(me)](https://www.youtube.com/channel/UCj0gxlFS3Av3Fweou2BhEdw) p
 ## How to use
 1. Download the [exe](https://github.com/kartFr/Auto-Animation-Stealer/releases/latest) and put in your roblox cookie.
 2. Install the [plugin](https://create.roblox.com/marketplace/asset/15358287993/AnimationStealer%3Fkeyword=&pageNumber=&pagePosition=) and press some silly buttons.
+
+## Have an issue?
+Feel free to join our discord and report it to me. You can join by clicking the discord button at the top. Alternatively dm me on discord, alekfart. I will help to the best of my abilities.
