@@ -35,7 +35,9 @@ jobs:
       - name: Create Version File
         run: echo ${{ github.event.inputs.version }} > VERSION.txt 
       - name: Zip The Files
-        run: zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt dist/"Animation Reuploader.exe"
+        run: |
+        ls .
+        zip -r AnimationReuploader.zip LICENSE.txt VERSION.txt dist/"Animation Reuploader.exe"
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
