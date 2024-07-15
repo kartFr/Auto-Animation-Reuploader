@@ -2,6 +2,9 @@ name: Build Release
 description: Builds the release files
 author: kartfr
 
+permissions:
+    contents: read
+
 inputs:
   version:
     required: true
