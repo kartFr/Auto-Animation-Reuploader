@@ -200,7 +200,7 @@ def updateSavedCookie():
 
 def getCurrentVersion():
     try:
-        versionFile = open("version.txt")
+        versionFile = open("VERSION.txt")
     except:
         return
     return versionFile.read()
