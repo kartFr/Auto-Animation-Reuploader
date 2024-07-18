@@ -68,7 +68,7 @@ def getCurrentVersion():
         versionFile = open("VERSION.txt")
     except:
         return
-    return versionFile.read()
+    return versionFile.read().strip()
 
 
 def getLatestVersion():
@@ -371,7 +371,7 @@ if __name__ == '__main__':
     if (latestVersion is not None) & (getCurrentVersion()  != latestVersion): # incase sending the request to github fails.
         print("\033[33mOut of date. New update is available on github.")
         update = input("\033[0mUpdate?(y/n): ")
-        
+
         if update == "y":
             updateFile()
         clearScreen()
