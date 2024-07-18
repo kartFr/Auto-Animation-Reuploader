@@ -251,7 +251,7 @@ def getAssetIdInfo(assetIds):
     for i in range(5):
         try:
             assetDetailsRequest = requests.get(
-                f"https://develop.roblox.com/v1/assets?assetIds={ ",".join(str(i) for i in assetIds) }",
+                f"https://develop.roblox.com/v1/assets?assetIds={ ','.join(str(i) for i in assetIds) }",
                 cookies={ 
                     ".ROBLOSECURITY": cookie 
                 })
