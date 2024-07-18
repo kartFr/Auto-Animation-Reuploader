@@ -28,11 +28,71 @@ completedAnimations = {}
 started = False
 finished = False
 cookie = None
-totalAnimations = 0
-animationsUploaded = 0
+totalIds = 0
+idsUploaded = 0
+
+def isValidCookie():
+    global cookie
+    
+    try:
+       json.loads(requests.get(
+            "https://www.roblox.com/mobileapi/userinfo",
+            cookies={".ROBLOSECURITY": cookie}
+    ).content)
+    except:
+        return False
+    return True
+
+
+def getSavedCookie():
+    try:
+        cookieFile = open("cookie.txt")
+    except:
+        return None
+    return cookieFile.read()
+
+
+def updateSavedCookie():
+    global cookie
+    
+    try:
+        cookieFile = open("cookie.txt", "w")
+        cookieFile.write(cookie)
+        cookieFile.close()
+    except:
+        print("\033[33mSaving cookie failed.")
+
+
+def getCurrentVersion():
+    try:
+        versionFile = open("VERSION.txt")
+    except:
+        return
+    return versionFile.read()
+
+
+def getLatestVersion():
+    try:
+        versionRequest = requests.get("https://api.github.com/repos/kartFr/Auto-Animation-Reuploader/releases/latest")
+    except:
+        return
+   
+    return json.loads(versionRequest.content)["name"]
 
 def clearScreen():
     os.system("cls" if os.name == "nt" else "clear")
+
+
+def updateFile():
+    clearScreen()
+    print("\033[33mUpdating. Please be patient.")
+    try:
+        dataPath = sys._MEIPASS
+    except:
+        dataPath = os.path.dirname(os.path.abspath(__file__)) # so i can test when not packaged
+    subprocess.Popen(["Python", os.path.join(dataPath, "updater.py")])
+    sys.exit()
+
 
 XSRFTokenEvent = threading.Event()
 fetchingXSRFToken = False
@@ -52,11 +112,11 @@ def getXSRFToken():
     if XSRFToken:
         print(f"\033[31mXSRF token expired fetching new one")
 
-    for i in range(0, 3):
+    for i in range(3):
         try:
             XSRFToken = requests.post(
                 "https://auth.roblox.com/v2/logout",
-                cookies={".ROBLOSECURITY": cookie}
+                cookies={ ".ROBLOSECURITY": cookie }
             ).headers["X-CSRF-TOKEN"]
             break
         except:
@@ -68,49 +128,79 @@ def getXSRFToken():
     XSRFTokenEvent.set()
     XSRFTokenEvent.clear()
 
-def publishAnimation(animation, name, groupId):
+
+def getAssetData(assetid):
+    try:
+        request = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + str(assetid))
+    except:
+        return False
+    return request.content      
+
+def publishAsset(assetTypeName, name, creatorId, isGroup, assetData):
+    try:
+        request =  requests.post(
+            f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName={ assetTypeName }&name={ name }&description=kartfr🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{ '&groupId=' + str(creatorId) if isGroup else '' }",
+            assetData,
+            headers={ "X-CSRF-TOKEN": XSRFToken,  "User-Agent": "RobloxStudio/WinInet" },
+            cookies={ ".ROBLOSECURITY": cookie }
+        )
+    except:
+        pass
+    return request
+
+def publishAnimation(animationInfo, creatorId, isGroup):
     global completedAnimations
     global fetchingXSRFToken
-    global animationsUploaded
-    global totalAnimations
+    global idsUploaded
+    global totalIds
     global XSRFToken
     global cookie
 
-    animationId = False
+    animationId = animationInfo["id"]
+    name = animationInfo["name"]
+    animationCreatorId = animationInfo["creator"]["targetId"]
+    assetType = animationInfo["type"]
 
-    if not XSRFToken:
-        getXSRFToken()
+    newAnimationId = None
+    animationInfo = None
+    failureReason = None
+    animationData = None  
 
-    for i in range(0, 3):
+    if animationCreatorId == creatorId:
+        failureReason = "Owned"
+
+    if animationCreatorId == 1: # 1 is Roblox
+        failureReason = "Roblox"
+
+    if assetType != "Animation":
+        failureReason = "Not Animation"
+
+    for i in range(5):
+        if failureReason:
+            break
+
         if fetchingXSRFToken:
             getXSRFToken()
-            
-        try:
-            animationData = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + animation).content
-        except:
-            time.sleep(1)
-            continue
-    
-        try:
-            publishRequest =  requests.post(
-                f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName=Animation&name={name}&description=kartfr🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{'&groupId=' + str(groupId) if groupId else ''}",
-                animationData,
-                headers={"X-CSRF-TOKEN": XSRFToken,  "User-Agent": "RobloxStudio/WinInet"},
-                cookies={".ROBLOSECURITY": cookie}
-            )
-        except:
-            time.sleep(1)
-            continue
-       
-        content = publishRequest.content.decode("utf-8")
+        
+        if not animationData:
+            animationData = getAssetData(animationId)
+            if not animationData:
+                time.sleep(1)
+                continue
+
+        publishRequest = publishAsset("Animation", name, creatorId, isGroup, animationData)
+
+        content = publishRequest.content.decode()
         if content.isnumeric():
-            animationId = content
+            newAnimationId = content
             break
         
         match publishRequest.status_code:
+            case 422: #unprocessable entity
+                break
             case 500: # Internal Server Error
                 name = "[Censored Name]" # Even though i am detecting if the name is bad sometimes roblox likes to just give 500 internal server error instead of "innapropriate name or description"
-                time.sleep(1)
+                time.sleep(3)
                 continue
             case 403: # Forbidden
                 if content == "XSRF Token Validation Failed":
@@ -121,106 +211,117 @@ def publishAnimation(animation, name, groupId):
             case "Inappropriate name or description.":
                 name = "[Censored Name]"
             case _:
-                print(f"\033[31mError found please report:\nCode: {publishRequest.status_code}\nReason: {publishRequest.reason}\nContent: {content}") #Hopefully this will be fine
-                #print(publishRequest.status_code, publishRequest.reason)
-
+                print(f"\033[31mError found please report:\nCode: { publishRequest.status_code }\nReason: { publishRequest.reason }\nContent: { content }") #Hopefully this will be fine
+                
         time.sleep(1)
-    animationsUploaded += 1
-
-    if not animationId:
-        print(f"\033[31m[{animationsUploaded}/{totalAnimations}] Failed to publish {name}: {animation}.")
+    
+    idsUploaded += 1
+    if newAnimationId:
+        print(f"\033[32m[{ idsUploaded }/{ totalIds }] { name }: { animationId } ; { newAnimationId }")
+        completedAnimations[animationId] = newAnimationId
     else:
-        print(f"\033[32m[{animationsUploaded}/{totalAnimations}] {name}: {animation} ; {animationId}")
-        completedAnimations[animation] = animationId
+        match failureReason:
+            case "Owned":
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] Already own { name }: { animationId }.")
+            case "Roblox":
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is owned by roblox: { animationId }.")
+            case "Not Animation":
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is not an animation: { animationId }.")
+            case _:
+                print(f"\033[31m[{ idsUploaded }/{ totalIds }] Failed to publish { name }: { animationId }.")
 
-    if animationsUploaded == totalAnimations:
+    if idsUploaded == totalIds:
         global completedEvent
         completedEvent.set()
         completedEvent.clear()
 
-def publishAnimationAsync(animation, name, groupId):
-    newThread = threading.Thread(target= publishAnimation, args=(animation, name, groupId,))
-    newThread.start()
-    time.sleep(60/400) #throttle, because this is what roblox reccomends(400 a minute). Someone can pull and I will merge with your permission if its stable if you want to make it faster.
 
-def bulkPublishAnimations(animations, groupId):
-    global totalAnimations
+def publishAnimationAsync(animationInfo, creatorId, isGroup):
+    newThread = threading.Thread(target=publishAnimation, args=(animationInfo, creatorId, isGroup,))
+    newThread.start()
+
+    animationCreatorId = animationInfo["creator"]["targetId"]
+    assetType = animationInfo["type"]
+
+    if animationCreatorId != creatorId and animationCreatorId != 1 and assetType == "Animation": # no reason to throttle because it wont do any requests
+        time.sleep(60/400) #throttle, because this is what roblox reccomends(400 a minute). Someone can pull and I will merge with your permission if its stable if you want to make it faster.
+
+
+def getAssetIdInfo(assetIds):
+    for i in range(5):
+        try:
+            assetDetailsRequest = requests.get(
+                f"https://develop.roblox.com/v1/assets?assetIds={ ",".join(str(i) for i in assetIds) }",
+                cookies={ 
+                    ".ROBLOSECURITY": cookie 
+                })
+            assetInfoList = json.loads(assetDetailsRequest.content)
+        except:
+            time.sleep(1)
+            continue
+
+        if assetDetailsRequest.status_code == 500:
+            time.sleep(1)
+            continue
+        
+        return assetInfoList["data"]
+    
+    
+def getMissingIds(ids, assetInfoList):
+    global idsUploaded
+    global totalIds
+
+    infoListIds = {}
+
+    for animationInfo in assetInfoList:
+        infoListIds[animationInfo["id"]] = True # o(1) fart search gayatt KILL ME
+
+    for id in ids:
+        if int(id) in infoListIds:
+            continue
+
+        idsUploaded += 1
+        print(f"\033[31m[{ idsUploaded }/{ totalIds }] Invalid asset id: { id }.")
+
+
+def splitArray(array, size):
+    return [array[i:i + size] for i in range(0, len(array), size)]
+
+
+def bulkPublishAnimations(animations, creatorId, isGroup):
+    global totalIds
     global completedEvent
     global finished
-    global animationsUploaded
+    global idsUploaded
 
-    animationsUploaded = 0
-    totalAnimations = len(animations)
+    splitAnimations = splitArray(animations, 50) # max bulk get asset details is 50
+    totalIds = len(animations)
     startTime = time.time()
+    idsUploaded = 0
 
-    for animation in animations:
-        publishAnimationAsync(animation, animations[animation], groupId)
+    getXSRFToken() #get xsrf for first time meow :3 I hate myself
+
+    for animationList in splitAnimations:
+        animationInfoList = getAssetIdInfo(animationList)
+        getMissingIds(animationList, animationInfoList)
+
+        for animationInfo in animationInfoList:
+            publishAnimationAsync(animationInfo, creatorId, isGroup)
     
-    completedEvent.wait()
+    if idsUploaded != totalIds:
+        completedEvent.wait()
 
     hours, remainder = divmod(time.time() - startTime, 3600)
     minutes, seconds = divmod(remainder, 60)
-    print(f"\033[0mPublishing took {int(hours)} hours, {int(minutes)} minutes, and {int(seconds)} seconds.")
+    print(f"\033[0mPublishing took { int(hours) } hours, { int(minutes) } minutes, and { int(seconds) } seconds.")
     print("\033[0mWaiting for client...")
     finished = True
 
-def bulkPublishAnimationsAsync(animations, groupId):
-    newThread = threading.Thread(target=bulkPublishAnimations, args=(animations, groupId,))
+
+def bulkPublishAnimationsAsync(animations, creatorId, isGroup):
+    newThread = threading.Thread(target=bulkPublishAnimations, args=(animations, creatorId, isGroup,))
     newThread.start()
 
-def isValidCookie():
-    global cookie
-    isLoggedIn = requests.get(
-        "https://www.roblox.com/mobileapi/userinfo",
-        cookies={".ROBLOSECURITY": cookie}
-    )
-
-    try:
-        json.loads(isLoggedIn.content)
-    except:
-        return False
-    return True
-
-def getSavedCookie():
-    try:
-        cookieFile = open("cookie.txt")
-    except:
-        return None
-    return cookieFile.read()
-
-def updateSavedCookie():
-    global cookie
-    
-    try:
-        cookieFile = open("cookie.txt", "w")
-        cookieFile.write(cookie)
-        cookieFile.close()
-    except:
-        print("\033[33mSaving cookie failed.")
-
-def getCurrentVersion():
-    try:
-        versionFile = open("VERSION.txt")
-    except:
-        return
-    return versionFile.read()
-
-def getLatestVersion():
-    try:
-        versionRequest = requests.get("https://api.github.com/repos/kartFr/Auto-Animation-Reuploader/releases/latest")
-    except:
-        return
-    return json.loads(versionRequest.content)["name"]
-
-def updateFile():
-    clearScreen()
-    print("\033[33mUpdating. Please be patient.")
-    try:
-        dataPath = sys._MEIPASS
-    except:
-        dataPath = os.path.dirname(os.path.abspath(__file__)) # so i can test when not packaged
-    subprocess.Popen(["Python", os.path.join(dataPath, "updater.py")])
-    sys.exit()
 
 class Requests(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -240,9 +341,8 @@ class Requests(BaseHTTPRequestHandler):
             started = False
         else:
             currentAnimations = completedAnimations
-            completedAnimations = {}
-            self.wfile.write(bytes(json.dumps(currentAnimations).encode("utf-8")))
-            
+            completedAnimations = {  }
+            self.wfile.write(bytes(json.dumps(currentAnimations).encode()))  
 
     def do_POST(self):
         self.send_response(200)
@@ -258,7 +358,7 @@ class Requests(BaseHTTPRequestHandler):
         recievedData = json.loads(self.rfile.read(contentLength).decode('utf-8'))
         clearScreen()
         print("\033[33mUploading animations.")
-        bulkPublishAnimationsAsync(recievedData["animations"], recievedData["isGroup"]) #new thread so client isn't waiting on message back from server
+        bulkPublishAnimationsAsync(recievedData["animations"], recievedData["creatorId"], recievedData["isGroup"]) #new thread so client isn't waiting on message back from server
 
     def log_message(self, *args):
         pass
