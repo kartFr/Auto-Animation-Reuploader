@@ -2,7 +2,6 @@ github_repo_latest = "https://api.github.com/repos/kartFr/Auto-Animation-Reuploa
 asset_delivery = "https://assetdelivery.roblox.com/v1/asset/?id="
 asset_info = "https://develop.roblox.com/v1/assets?assetIds="
 user_info = "https://www.roblox.com/mobileapi/userinfo"
-log_out = "https://auth.roblox.com/v2/logout"
 
 def getPublishUrl(assetTypeName, name, creatorId, isGroup):
     return (
