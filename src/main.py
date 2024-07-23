@@ -237,7 +237,6 @@ async def bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup):
             getAssetInfoTask = asyncio.create_task(getBulkAssetInfo(getAssetInfoSession, splitAssetIds[index + 1])) #get the next asset info so there isn't that much of a wait next index
         
         missingIds = len(assetIds) - len(assetInfoList)
-        print(len(assetIds), len(assetInfoList), missingIds)
         if missingIds != 0:
             print(f"\033[33mSkipping {missingIds} ids. (Invalid ids)") # for bad ids or whatever
             idsUploaded += missingIds
