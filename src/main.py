@@ -201,12 +201,14 @@ async def getBulkAssetInfo(session, assetIds):
             await asyncio.sleep(1)
             continue
 
+
 def doesIndexExistInArray(array, index):
     try:
         array[index]
         return True
     except:
         return False
+
 
 async def bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup):
     global finished, totalIds, idsUploaded
@@ -272,8 +274,10 @@ async def bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup):
     print("\033[0mWaiting for client to finish changing ids...")
     finished = True
 
+
 def startUploadingAssets(assetType, ids, creatorId, isGroup):
     asyncio.run(bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup))
+
 
 class Requests(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -316,9 +320,6 @@ class Requests(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-def startLocalhost():
-    with HTTPServer(("localhost", Config.server_port), Requests) as server:
-        server.serve_forever()
 
 if __name__ == '__main__':
     cookie = getSavedCookie()
@@ -351,5 +352,7 @@ if __name__ == '__main__':
                 print("\033[31mCookie is invalid.")  
 
     print("\033[0mlocalhost started you may start the plugin.")
-    startLocalhost()
+
+    with HTTPServer(("localhost", Config.server_port), Requests) as server:
+        server.serve_forever()
     
