@@ -147,7 +147,7 @@ async def publishAssetAsync(session, oldId, name, creatorId, isGroup):
         if publishRequest is None:
             await asyncio.sleep(1)
             continue
-            
+
         content = publishRequest["content"].decode()
         if content.isnumeric():
             newAnimationId = content
@@ -352,3 +352,4 @@ if __name__ == '__main__':
 
     print("\033[0mlocalhost started you may start the plugin.")
     startLocalhost()
+    
