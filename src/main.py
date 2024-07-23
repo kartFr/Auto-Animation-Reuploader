@@ -166,7 +166,7 @@ async def publishAssetAsync(session, oldId, name, creatorId, isGroup):
             case "Inappropriate name or description.":
                 name = "[Censored Name]"
             case _:
-                print(f"\033[31mError found please report:\nCode: { publishRequest["status_code"] }\nReason: { publishRequest["reason"] }\nContent: { content }") #Hopefully this will be fine
+                print(f"\033[31mError found please report:\nCode: { publishRequest['status_code'] }\nReason: { publishRequest['reason'] }\nContent: { content }") #Hopefully this will be fine
         await asyncio.sleep(1)
 
     idsUploaded += 1
