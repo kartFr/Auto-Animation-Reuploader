@@ -17,28 +17,58 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import subprocess
 import threading
+import endpoints
 import requests
+import aiohttp
+import asyncio
 import json
 import time
 import sys
 import os
 
-completedEvent = threading.Event()
 completedAnimations = {}
+XSRFToken = None
 started = False
 finished = False
 cookie = None
 totalIds = 0
 idsUploaded = 0
 
+
+class Config:
+    cookie_file = "cookie.txt"
+    version_file = "VERSION.txt"
+    server_port = 6969
+
+
+async def sendRequestAsync(session, requestType, url, cookies={}, headers={}, data=None):
+    global XSRFToken
+    headers = {i: v for i, v in headers.items() if v is not None}
+
+    for i in range(2):
+        try:
+            async with getattr(session, requestType)(
+                url,
+                data=data,
+                headers=headers,
+                cookies=cookies
+            ) as response:
+                if response.status == 403: # forbidden(bad xsrf)
+                    XSRFToken = response.headers.get("x-csrf-token")
+                    headers["X-CSRF-TOKEN"] = XSRFToken
+                    continue
+                return {"status_code": response.status, "reason": response.reason, "content": await response.read()}
+        except:
+            pass
+
 def isValidCookie():
     global cookie
     
     try:
-       json.loads(requests.get(
-            "https://www.roblox.com/mobileapi/userinfo",
+        json.loads(requests.get(
+            endpoints.user_info,
             cookies={".ROBLOSECURITY": cookie}
-    ).content)
+        ).content)
     except:
         return False
     return True
@@ -46,38 +76,37 @@ def isValidCookie():
 
 def getSavedCookie():
     try:
-        cookieFile = open("cookie.txt")
+        with open(Config.cookie_file) as cookieFile:
+            return cookieFile.read()
     except:
-        return None
-    return cookieFile.read()
+        return
 
 
 def updateSavedCookie():
     global cookie
     
     try:
-        cookieFile = open("cookie.txt", "w")
-        cookieFile.write(cookie)
-        cookieFile.close()
+        with open("cookie.txt", "w") as cookieFile:
+            cookieFile.write(cookie)
     except:
         print("\033[33mSaving cookie failed.")
 
 
 def getCurrentVersion():
     try:
-        versionFile = open("VERSION.txt")
+        with open(Config.version_file) as versionFile:
+            return versionFile.read().strip()
     except:
         return
-    return versionFile.read().strip()
 
 
 def getLatestVersion():
     try:
-        versionRequest = requests.get("https://api.github.com/repos/kartFr/Auto-Animation-Reuploader/releases/latest")
+        versionResponse = requests.get(endpoints.github_repo_latest)
+        return json.loads(versionResponse.content)["name"]
     except:
         return
-   
-    return json.loads(versionRequest.content)["name"]
+
 
 def clearScreen():
     os.system("cls" if os.name == "nt" else "clear")
@@ -86,242 +115,165 @@ def clearScreen():
 def updateFile():
     clearScreen()
     print("\033[33mUpdating. Please be patient.")
-    try:
-        dataPath = sys._MEIPASS
-    except:
-        dataPath = os.path.dirname(os.path.abspath(__file__)) # so i can test when not packaged
+    dataPath = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     subprocess.Popen(["Python", os.path.join(dataPath, "updater.py")])
     sys.exit()
 
 
-XSRFTokenEvent = threading.Event()
-fetchingXSRFToken = False
-XSRFToken = None
-
-def getXSRFToken():
-    global XSRFToken
-    global fetchingXSRFToken
-    global XSRFTokenEvent
-
-    if fetchingXSRFToken:
-        XSRFTokenEvent.wait()
-        return
-    
-    fetchingXSRFToken = True
-
-    if XSRFToken:
-        print(f"\033[31mXSRF token expired fetching new one")
-
-    for i in range(3):
-        try:
-            XSRFToken = requests.post(
-                "https://auth.roblox.com/v2/logout",
-                cookies={ ".ROBLOSECURITY": cookie }
-            ).headers["X-CSRF-TOKEN"]
-            break
-        except:
-            print(f"\033[31mFailed getting XSRF token trying in 5 seconds")
-            time.sleep(5)
-            pass
-
-    fetchingXSRFToken = False
-    XSRFTokenEvent.set()
-    XSRFTokenEvent.clear()
-
-
-def getAssetData(assetid):
-    try:
-        request = requests.get("https://assetdelivery.roblox.com/v1/asset/?id=" + str(assetid))
-    except:
-        return False
-    return request.content      
-
-def publishAsset(assetTypeName, name, creatorId, isGroup, assetData):
-    try:
-        request =  requests.post(
-            f"https://www.roblox.com/ide/publish/uploadnewanimation?assetTypeName={ assetTypeName }&name={ name }&description=kartfr🤑🤑&AllID=1&ispublic=False&allowComments=True&isGamesAsset=False{ '&groupId=' + str(creatorId) if isGroup else '' }",
-            assetData,
-            headers={ "X-CSRF-TOKEN": XSRFToken,  "User-Agent": "RobloxStudio/WinInet" },
-            cookies={ ".ROBLOSECURITY": cookie }
-        )
-    except:
-        pass
-    return request
-
-def publishAnimation(animationInfo, creatorId, isGroup):
-    global completedAnimations
-    global fetchingXSRFToken
-    global idsUploaded
-    global totalIds
-    global XSRFToken
-    global cookie
-
-    animationId = animationInfo["id"]
-    name = animationInfo["name"]
-    animationCreatorId = animationInfo["creator"]["targetId"]
-    assetType = animationInfo["type"]
-
+async def publishAssetAsync(session, oldId, name, creatorId, isGroup):
+    global completedAnimations, XSRFToken, cookie, idsUploaded
     newAnimationId = None
-    animationInfo = None
-    failureReason = None
     animationData = None  
-
-    if animationCreatorId == creatorId:
-        failureReason = "Owned"
-
-    if animationCreatorId == 1: # 1 is Roblox
-        failureReason = "Roblox"
-
-    if assetType != "Animation":
-        failureReason = "Not Animation"
-
-    for i in range(5):
-        if failureReason:
-            break
-
-        if fetchingXSRFToken:
-            getXSRFToken()
         
+    for i in range(3):
+
         if not animationData:
-            animationData = getAssetData(animationId)
-            if not animationData:
-                time.sleep(1)
+            try:
+                dataResponse = await sendRequestAsync(session, "get", endpoints.asset_delivery + str(oldId))
+                animationData = dataResponse["content"]
+            except:
+                await asyncio.sleep(1)
                 continue
 
-        publishRequest = publishAsset("Animation", name, creatorId, isGroup, animationData)
+        publishRequest = await sendRequestAsync(
+            session,
+            "post",
+            endpoints.getPublishUrl("Animation", name, creatorId, isGroup),
+            cookies={ ".ROBLOSECURITY": cookie },
+            headers={ "X-CSRF-TOKEN": XSRFToken,  "User-Agent": "RobloxStudio/WinInet" },
+            data=animationData
+        )
 
-        content = publishRequest.content.decode()
+        if publishRequest is None:
+            await asyncio.sleep(1)
+            continue
+
+        content = publishRequest["content"].decode()
         if content.isnumeric():
             newAnimationId = content
             break
-        
-        match publishRequest.status_code:
-            case 422: #unprocessable entity
-                break
-            case 500: # Internal Server Error
-                name = "[Censored Name]" # Even though i am detecting if the name is bad sometimes roblox likes to just give 500 internal server error instead of "innapropriate name or description"
-                time.sleep(3)
+
+        match publishRequest["status_code"]:
+            case 500 | 400 | 422: # Bad Request / Internal Server Error / Unprocessable Entity
+                name = "[Censored Name]" # Even though i am detecting if the name is bad sometimes roblox likes to just give other shit
+                await asyncio.sleep(1)
                 continue
-            case 403: # Forbidden
-                if content == "XSRF Token Validation Failed":
-                    getXSRFToken()
-                    continue
+            case 403 | 504: # unauthorized(bad xsrf) / gateway timeout(bad wifi XDXDXDDDDD fat noobs KILLL MEE)
+                await asyncio.sleep(1 * (i + 1))
+                continue
 
         match content:
             case "Inappropriate name or description.":
                 name = "[Censored Name]"
             case _:
-                print(f"\033[31mError found please report:\nCode: { publishRequest.status_code }\nReason: { publishRequest.reason }\nContent: { content }") #Hopefully this will be fine
-                
-        time.sleep(1)
-    
+                print(f"\033[31mError found please report:\nCode: { publishRequest["status_code"] }\nReason: { publishRequest["reason"] }\nContent: { content }") #Hopefully this will be fine
+        await asyncio.sleep(1)
+
     idsUploaded += 1
     if newAnimationId:
-        print(f"\033[32m[{ idsUploaded }/{ totalIds }] { name }: { animationId } ; { newAnimationId }")
-        completedAnimations[animationId] = newAnimationId
-    else:
-        match failureReason:
-            case "Owned":
-                print(f"\033[33m[{ idsUploaded }/{ totalIds }] Already own { name }: { animationId }.")
-            case "Roblox":
-                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is owned by roblox: { animationId }.")
-            case "Not Animation":
-                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is not an animation: { animationId }.")
-            case _:
-                print(f"\033[31m[{ idsUploaded }/{ totalIds }] Failed to publish { name }: { animationId }.")
-
-    if idsUploaded == totalIds:
-        global completedEvent
-        completedEvent.set()
-        completedEvent.clear()
+        print(f"\033[32m[{ idsUploaded }/{ totalIds }] { name }: { oldId } ; { newAnimationId }")
+        completedAnimations[oldId] = newAnimationId
+    else:    
+        print(f"\033[31m[{ idsUploaded }/{ totalIds }] Failed to publish { name }: { oldId }.")
 
 
-def publishAnimationAsync(animationInfo, creatorId, isGroup):
-    newThread = threading.Thread(target=publishAnimation, args=(animationInfo, creatorId, isGroup,))
-    newThread.start()
-
-    animationCreatorId = animationInfo["creator"]["targetId"]
-    assetType = animationInfo["type"]
-
-    if animationCreatorId != creatorId and animationCreatorId != 1 and assetType == "Animation": # no reason to throttle because it wont do any requests
-        time.sleep(60/400) #throttle, because this is what roblox reccomends(400 a minute). Someone can pull and I will merge with your permission if its stable if you want to make it faster.
-
-
-def getAssetIdInfo(assetIds):
-    for i in range(5):
-        try:
-            assetDetailsRequest = requests.get(
-                f"https://develop.roblox.com/v1/assets?assetIds={ ','.join(str(i) for i in assetIds) }",
-                cookies={ 
-                    ".ROBLOSECURITY": cookie 
-                })
-            assetInfoList = json.loads(assetDetailsRequest.content)
-        except:
-            time.sleep(1)
-            continue
-
-        if assetDetailsRequest.status_code == 500:
-            time.sleep(1)
-            continue
-        
-        return assetInfoList["data"]
-    
-    
-def getMissingIds(ids, assetInfoList):
-    global idsUploaded
-    global totalIds
-
-    infoListIds = {}
-
-    for animationInfo in assetInfoList:
-        infoListIds[animationInfo["id"]] = True # o(1) fart search gayatt KILL ME
-
-    for id in ids:
-        if int(id) in infoListIds:
-            continue
-
-        idsUploaded += 1
-        print(f"\033[31m[{ idsUploaded }/{ totalIds }] Invalid asset id: { id }.")
+async def closeSessionWhenTasksAreFinished(session, tasks):
+    await asyncio.gather(*tasks)
+    await session.close()
 
 
 def splitArray(array, size):
     return [array[i:i + size] for i in range(0, len(array), size)]
 
 
-def bulkPublishAnimations(animations, creatorId, isGroup):
-    global totalIds
-    global completedEvent
-    global finished
-    global idsUploaded
+async def getBulkAssetInfo(session, assetIds):
+    while True: # we will see how bad this will go lol
+        try:
+            assetInfoResponse = await sendRequestAsync(
+                session, 
+                "get", 
+                endpoints.asset_info + ",".join(str(i) for i in assetIds),
+                { ".ROBLOSECURITY": cookie }
+            )
 
-    splitAnimations = splitArray(animations, 50) # max bulk get asset details is 50
-    totalIds = len(animations)
-    startTime = time.time()
+            return json.loads(assetInfoResponse["content"])["data"]
+        except:
+            await asyncio.sleep(1)
+            continue
+
+def doesIndexExistInArray(array, index):
+    try:
+        array[index]
+        return True
+    except:
+        return False
+
+async def bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup):
+    global finished, totalIds, idsUploaded
+    splitAssetIds = splitArray(ids, 50) # max bulk get asset details is 50
+    totalIds = len(ids)
     idsUploaded = 0
+    startTime = time.time() # time.time truly peak code meow :3 I hate myself
+    sessionTasks = []
+    getAssetInfoTask = None
+    getAssetInfoSession = aiohttp.ClientSession() # cus i don't feel that comfortable reusing sessions meant for uploading to get asset info
+    index = 0
 
-    getXSRFToken() #get xsrf for first time meow :3 I hate myself
+    for assetIds in splitAssetIds:
+        session = aiohttp.ClientSession()
+        uploadTasks = []
 
-    for animationList in splitAnimations:
-        animationInfoList = getAssetIdInfo(animationList)
-        getMissingIds(animationList, animationInfoList)
+        if getAssetInfoTask is None:
+            assetInfoList = await getBulkAssetInfo(getAssetInfoSession, assetIds)
+        else:
+            if getAssetInfoTask.done():
+                assetInfoList = getAssetInfoTask.result()
+            else:
+                assetInfoList = await getAssetInfoTask
 
-        for animationInfo in animationInfoList:
-            publishAnimationAsync(animationInfo, creatorId, isGroup)
-    
-    if idsUploaded != totalIds:
-        completedEvent.wait()
+        if doesIndexExistInArray(splitAssetIds, index + 1):
+            getAssetInfoTask = asyncio.create_task(getBulkAssetInfo(getAssetInfoSession, splitAssetIds[index + 1])) #get the next asset info so there isn't that much of a wait next index
+        
+        missingIds = len(assetIds) - len(assetInfoList)
+        print(len(assetIds), len(assetInfoList), missingIds)
+        if missingIds != 0:
+            print(f"\033[33mSkipping {missingIds} ids. (Invalid ids)") # for bad ids or whatever
+            idsUploaded += missingIds
+        
+        for assetInfo in assetInfoList:
+            targetCreatorId = assetInfo["creator"]["targetId"]
+            assetId = assetInfo["id"]
+            name = assetInfo["name"]
+
+            if targetCreatorId == creatorId:
+                idsUploaded += 1
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] Already own { name }: { assetId }.")
+                continue
+            elif targetCreatorId == 1: # 1 is Roblox
+                idsUploaded += 1
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is owned by roblox: { assetId }.")
+                continue
+            elif assetInfo["type"] != assetType:
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is not an animation: { assetId }.")
+                idsUploaded += 1
+                continue
+
+            uploadTasks.append(asyncio.create_task(publishAssetAsync(session, assetId, name, creatorId, isGroup)))
+            await asyncio.sleep(60/400) #throttle, because this is what roblox reccomends(400 a minute).
+        sessionTasks.append(asyncio.create_task(closeSessionWhenTasksAreFinished(session, uploadTasks)))
+        index += 1
+
+    await asyncio.gather(*sessionTasks)
+    await getAssetInfoSession.close()
 
     hours, remainder = divmod(time.time() - startTime, 3600)
     minutes, seconds = divmod(remainder, 60)
     print(f"\033[0mPublishing took { int(hours) } hours, { int(minutes) } minutes, and { int(seconds) } seconds.")
-    print("\033[0mWaiting for client...")
+    print("\033[0mWaiting for client to finish changing ids...")
     finished = True
 
-
-def bulkPublishAnimationsAsync(animations, creatorId, isGroup):
-    newThread = threading.Thread(target=bulkPublishAnimations, args=(animations, creatorId, isGroup,))
-    newThread.start()
-
+def startUploadingAssets(assetType, ids, creatorId, isGroup):
+    asyncio.run(bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup))
 
 class Requests(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -341,7 +293,7 @@ class Requests(BaseHTTPRequestHandler):
             started = False
         else:
             currentAnimations = completedAnimations
-            completedAnimations = {  }
+            completedAnimations = {}
             self.wfile.write(bytes(json.dumps(currentAnimations).encode()))  
 
     def do_POST(self):
@@ -356,19 +308,24 @@ class Requests(BaseHTTPRequestHandler):
         started = True
         contentLength = int(self.headers['Content-Length'])
         recievedData = json.loads(self.rfile.read(contentLength).decode('utf-8'))
-        clearScreen()
+
         print("\033[33mUploading animations.")
-        bulkPublishAnimationsAsync(recievedData["animations"], recievedData["creatorId"], recievedData["isGroup"]) #new thread so client isn't waiting on message back from server
+        thread = threading.Thread(target=startUploadingAssets, args=("Animation", recievedData["animations"], recievedData["creatorId"], recievedData["isGroup"],))
+        thread.start()
 
     def log_message(self, *args):
         pass
+
+def startLocalhost():
+    with HTTPServer(("localhost", Config.server_port), Requests) as server:
+        server.serve_forever()
 
 if __name__ == '__main__':
     cookie = getSavedCookie()
     latestVersion = getLatestVersion()
     clearScreen()
 
-    if (latestVersion is not None) & (getCurrentVersion()  != latestVersion): # incase sending the request to github fails.
+    if (latestVersion := getLatestVersion()) and (getCurrentVersion() != latestVersion):
         print("\033[33mOut of date. New update is available on github.")
         update = input("\033[0mUpdate?(y/n): ")
 
@@ -388,12 +345,11 @@ if __name__ == '__main__':
             if isValidCookie():
                 updateSavedCookie()
                 break
-            elif cookie.find("WARNING:-DO-NOT-SHARE-THIS.") == -1:
+            elif not "WARNING:-DO-NOT-SHARE-THIS." in cookie:
                 print("\033[31mNo Roblox warning in cookie. Include the entire .ROBLOSECURITY warning.")
             else:
                 print("\033[31mCookie is invalid.")  
 
     print("\033[0mlocalhost started you may start the plugin.")
-
-    server = HTTPServer(("localhost", 6969), Requests)
-    server.serve_forever()
+    startLocalhost()
+    
