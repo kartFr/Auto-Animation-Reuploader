@@ -159,7 +159,7 @@ async def publishAssetAsync(session, oldId, name, creatorId, isGroup):
                 await asyncio.sleep(1)
                 continue
             case 403 | 504: # unauthorized(bad xsrf) / gateway timeout(bad wifi XDXDXDDDDD fat noobs KILLL MEE)
-                await asyncio.sleep(1 * (i + 1))
+                await asyncio.sleep(2**i+1)
                 continue
 
         match content:
