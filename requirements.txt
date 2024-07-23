@@ -1,2 +1,4 @@
 pyinstaller
 requests
+aiohttp
+asyncio
