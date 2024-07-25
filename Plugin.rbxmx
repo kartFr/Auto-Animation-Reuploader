@@ -1,7 +1,7 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBXD3472BD3D5D14CA2AADBA3CC55D2491B">
+	<Item class="Folder" referent="RBX23DA563FC78B4ED3A4B462D44A7AE32D">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -10,7 +10,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBX49652E0C1698488F94E14050F720CE5B">
+		<Item class="Script" referent="RBX607C9F58196A4C12ABD7E529C4C8CFC0">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -117,10 +117,13 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 	local animationInstances = {}
 	local skippedAnimations = {}
 	local scriptAnimationInfo = {}
+	local numberInstances = {}
 
 	for i,v in game:GetDescendants() do
 		local isAScript = v:IsA("Script") or v:IsA("ModuleScript") or v:IsA("LocalScript")
-		if not v:IsA("Animation") and not isAScript then continue end
+		local isANumberValue = v:IsA("NumberValue")
+		local isAAnimation = v:IsA("Animation")
+		if not isAAnimation and not isAScript and not isANumberValue then continue end
 
 		if isAScript then
 			local scriptSource = v.Source
@@ -146,12 +149,21 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 			continue
 		end
 
-		local id = string.gsub(v.AnimationId, "%D", "")
-		if #id <= 7 or #id >= 13 or not string.find(id, "[^0]") then table.insert(skippedAnimations, v) continue end
-		if animationInstances[id] then table.insert(animationInstances[id], v) continue end
-		animationInstances[id] = {}
-
-		table.insert(animationInstances[id], v)
+		local id = string.gsub(isANumberValue and v.Value or v.AnimationId, "%D", "")
+		
+		if #id <= 7 or #id >= 13 or not string.find(id, "[^0]") then 
+			if isAAnimation then table.insert(skippedAnimations, v) end
+			continue
+		end
+		
+		if animationInstances[id] or numberInstances[id] then 
+			table.insert(isAAnimation and animationInstances[id] or numberInstances[id], v)
+			continue 
+		end
+		
+		(isAAnimation and animationInstances or numberInstances)[id] = {}
+		table.insert(isAAnimation and animationInstances[id] or numberInstances[id], v)
+		
 		if not loopedOverAnimations[id] then 
 			table.insert(animationsToQuery, id) 
 			loopedOverAnimations[id] = true
@@ -194,6 +206,13 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 				warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", table.unpack(animationInstances[oldId]))
 			end
 			
+			if numberInstances[oldId] then
+				for i, numberValue in numberInstances[oldId] do
+					numberValue.Value = newId
+				end
+
+				warn(`Changed all instance values: {oldId} ; {newId}`, "Instances:", table.unpack(numberInstances[oldId]))
+			end
 			
 			if not scriptAnimationInfo[oldId] then continue end
 			local scriptsChanged = {}
@@ -243,7 +262,7 @@ end)]]></ProtectedString>
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="ScreenGui" referent="RBX37E502695A294928B2EB9B8ABC094B4D">
+			<Item class="ScreenGui" referent="RBX53B498B211FA4CA896F5BD6FE65F527B">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<bool name="AutoLocalize">true</bool>
@@ -266,7 +285,7 @@ end)]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 					<token name="ZIndexBehavior">1</token>
 				</Properties>
-				<Item class="Frame" referent="RBXCC5AF27816EB4E41B0B547285130C9AE">
+				<Item class="Frame" referent="RBX26D163B72862419BA350814E6094F997">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -329,7 +348,7 @@ end)]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="UIListLayout" referent="RBX34FB397750A04747B39433B3A9F29DD7">
+					<Item class="UIListLayout" referent="RBX59212EE4EE2842A5A99FF64B7CED2840">
 						<Properties>
 							<BinaryString name="AttributesSerialize"></BinaryString>
 							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -353,7 +372,7 @@ end)]]></ProtectedString>
 					</Item>
 				</Item>
 			</Item>
-			<Item class="Frame" referent="RBXB57C70039B6C4B3EA1DA1489BE45DF36">
+			<Item class="Frame" referent="RBXCC66B09023874B6DA0EB9389ACD48AA7">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -416,7 +435,7 @@ end)]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="TextLabel" referent="RBXD443B98A7BCA4740808E004E004A44F5">
+				<Item class="TextLabel" referent="RBXA393DC694555424998B6A37A44771259">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -510,7 +529,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="TextLabel" referent="RBXD3F9AD31331445EEAB7733F33466D861">
+				<Item class="TextLabel" referent="RBX594592D9FB814C91BA8B1F56F347274E">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -604,7 +623,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="UICorner" referent="RBXEE61D1B33EE246A290CA843B4E42AB0E">
+				<Item class="UICorner" referent="RBX4576F201AAD549B2BEE837509117389E">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -619,7 +638,7 @@ end)]]></ProtectedString>
 					</Properties>
 				</Item>
 			</Item>
-			<Item class="Sound" referent="RBXBEE2A560490240A89FD5EEEB3CF4474F">
+			<Item class="Sound" referent="RBXCDA230E7C4DB4AC9B30BBDE6829A4E9B">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -643,7 +662,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBX1D2C2117B55D4444A224D1B2E79A539A">
+			<Item class="Sound" referent="RBX2DFD31A9251048A49F83A2C7714E6C84">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -667,7 +686,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBXB382807BF86F44AA9E238B50578876A2">
+			<Item class="Sound" referent="RBX584095E23E24412F9CEAE858E859B308">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -691,7 +710,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="ModuleScript" referent="RBXBC4E58FB80BC4D6AB3D3A1DEF231F48D">
+			<Item class="ModuleScript" referent="RBXA238FF3F93ED4C419499A11F74C09317">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -883,7 +902,7 @@ return Signal]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
 			</Item>
-			<Item class="Frame" referent="RBXC057CBBC951F4B339345E8117493A919">
+			<Item class="Frame" referent="RBXD149821C0897406FB78A03871665DC9D">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -946,7 +965,7 @@ return Signal]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="ImageLabel" referent="RBXE44AB54D84464A81B8E4D2826491200E">
+				<Item class="ImageLabel" referent="RBX43689EEAA595453886CA88BB53DD102B">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -1042,7 +1061,7 @@ return Signal]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="TextButton" referent="RBX9B2B29562DD642CB9C31EF7C62AB2FD5">
+					<Item class="TextButton" referent="RBXE02925FA006C480DA59331D00AC7B6A0">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1141,7 +1160,7 @@ return Signal]]></ProtectedString>
 							<int name="ZIndex">1</int>
 						</Properties>
 					</Item>
-					<Item class="TextButton" referent="RBX9F3522DE54074C688726FC26A6581362">
+					<Item class="TextButton" referent="RBX032D78BF47AC40F1A98CDF41C99360E4">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1241,7 +1260,7 @@ return Signal]]></ProtectedString>
 						</Properties>
 					</Item>
 				</Item>
-				<Item class="TextLabel" referent="RBXB05736864074455BB2B7F54F70A42B91">
+				<Item class="TextLabel" referent="RBX68E216C18FD845CAACD293E9A0F5BA9D">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
