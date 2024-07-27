@@ -152,13 +152,13 @@ async def publishAssetAsync(session, oldId, name, creatorId, isGroup):
         if content.isnumeric():
             newAnimationId = content
             break
-        
+
         match publishRequest["status_code"]:
             case 500 | 400 | 422: # Bad Request / Internal Server Error / Unprocessable Entity
                 name = "[Censored Name]" # Even though i am detecting if the name is bad sometimes roblox likes to just give other shit
                 await asyncio.sleep(1)
                 continue
-            case 403 | 504 | 502: # unauthorized(bad xsrf) / gateway timeout(bad wifi XDXDXDDDDD fat noobs KILLL MEE) / 
+            case 403 | 504 | 502: # unauthorized(bad xsrf) / gateway timeout(bad wifi XDXDXDDDDD fat noobs KILLL MEE) / bad gateway 
                 await asyncio.sleep(2**i+1)
                 continue
 
