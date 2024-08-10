@@ -1,7 +1,7 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBX9EBE7E06F992453BADC8C59C7B9F2A7D">
+	<Item class="Folder" referent="RBX180393C934DC4DAB8E4AD65E69ABE865">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -10,7 +10,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBXA72F0CD57C3A4655933E38F036A45AC5">
+		<Item class="Script" referent="RBX681803DA7CAA46F5B5CB7C349FE4DEEA">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -20,8 +20,7 @@
 				<string name="Name">Script</string>
 				<token name="RunContext">0</token>
 				<string name="ScriptGuid">{80FF0A35-74C8-454C-84E3-66A6530937C4}</string>
-				<ProtectedString name="Source"><![CDATA[local SOUNDLOCALHOST = 4200
-local ANIMATIONLOCALHOST = 6969
+				<ProtectedString name="Source"><![CDATA[local ANIMATIONLOCALHOST = 5544
 
 local ScriptEditorService = game:GetService("ScriptEditorService")
 local HttpService = game:GetService("HttpService")
@@ -99,31 +98,39 @@ local function try(...)
 	return success, result
 end
 
-pluginButton.Click:Connect(function()
-	widget.Enabled = not widget.Enabled
-end)
+local function testForPermissions()
+	local testScript = Instance.new("Script")
+	local success = pcall(ScriptEditorService.UpdateSourceAsync, ScriptEditorService, testScript, function() return "" end)
+	testScript:Destroy()
+	if success then return true end
+end
 
-gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
-	if game.CreatorId == 0 then sendNotification("Error", "Publish game to group/profile.") return end
-	if busy then sendNotification("Busy", "Plugin is busy.") return end
-	local localHostStarted = pcall(HttpService.GetAsync, HttpService, `http://localhost:{ANIMATIONLOCALHOST}`)
-	if not localHostStarted then sendNotification("Error", "Could not connect to local host.") return end
-	
-	busy = true
-	sendNotification("Connected", "Successfully connected to localhost", Color3.new(0, 1, 0))
-	
-	local animationsToQuery = {}
-	local loopedOverAnimations = {} -- o(1) search of animation ids in animationsToQuery
-	local animationInstances = {}
-	local skippedAnimations = {}
-	local scriptAnimationInfo = {}
-	local numberInstances = {}
+local function isScript(instance)
+	return instance:IsA("Script") or instance:IsA("ModuleScript") or instance:IsA("LocalScript")
+end
 
-	for i,v in game:GetDescendants() do
-		local isAScript = v:IsA("Script") or v:IsA("ModuleScript") or v:IsA("LocalScript")
-		local isANumberValue = v:IsA("NumberValue")
-		local isAAnimation = v:IsA("Animation")
-		if not isAAnimation and not isAScript and not isANumberValue then continue end
+local function isValue(instance)
+	return instance:IsA("NumberValue") or instance:IsA("StringValue")
+end
+
+local function isValidId(id: string)
+	return #id > 7 and #id < 13 and string.find(id, "[^0]")
+end
+
+local function getInstanceIds(mainType: "Sound" | "Animation", instances: { any })
+	local idsToQuery = {}
+	local loopedOverAnimations = {}
+	local mainInstances = {}
+	local skippedMainInstances = {}
+	local scriptIdInfo = {}
+	local valueInstances = {}
+
+	for i,v in instances do
+		local isAScript = isScript(v)
+		local isAValueInstance = isValue(v)
+		local isAMainType = v:IsA(mainType)
+		if not isAMainType and not isAScript and not isAValueInstance then continue end
+		
 
 		if isAScript then
 			local scriptSource = v.Source
@@ -132,106 +139,99 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 			while true do
 				local idStart, idEnd = scriptSource:find("%d+", lastEnd)
 				if not idStart then break end
-				
 				local id = scriptSource:sub(idStart, idEnd)
+				
 				lastEnd = idEnd + 1
 
-				if #id <= 7 or #id >= 13 or not string.find(id, "[^0]") then continue end
-				if scriptAnimationInfo[id] then table.insert(scriptAnimationInfo[id], { idStart, idEnd, v }) continue end
+				if not isValidId(id) then continue end
+				if scriptIdInfo[id] then table.insert(scriptIdInfo[id], { idStart, idEnd, v }) continue end
 
-				scriptAnimationInfo[id] = {}
-				table.insert(scriptAnimationInfo[id], { idStart, idEnd, v })
-				if not loopedOverAnimations[id] then 
-					table.insert(animationsToQuery, id) 
-					loopedOverAnimations[id] = true
-				end
+				scriptIdInfo[id] = {}
+				table.insert(scriptIdInfo[id], { idStart, idEnd, v })
+				
+				if loopedOverAnimations[id] then continue end
+				table.insert(idsToQuery, id) 
+				loopedOverAnimations[id] = true
 			end
+
 			continue
+		end
+		
+
+		local id = string.gsub(isAValueInstance and v.Value or v.AnimationId, "%D", "")
+		if not isValidId(id) then 
+			if isAMainType then table.insert(skippedMainInstances, v) end
+			continue
+		end
+		
+		local targetArray = isAMainType and mainInstances or valueInstances
+		if targetArray[id] then 
+			table.insert(targetArray[id], v)
+			continue 
 		end
 
-		local id = string.gsub(isANumberValue and v.Value or v.AnimationId, "%D", "")
-		
-		if #id <= 7 or #id >= 13 or not string.find(id, "[^0]") then 
-			if isAAnimation then table.insert(skippedAnimations, v) end
-			continue
-		end
-		
-		if isAAnimation and animationInstances[id] then 
-			table.insert(animationInstances[id], v)
-			continue 
-		elseif isANumberValue and numberInstances[id] then
-			table.insert(numberInstances[id], v)
-			continue
-		end
-		
-		(isAAnimation and animationInstances or numberInstances)[id] = {}
-		table.insert(isAAnimation and animationInstances[id] or numberInstances[id], v)
-		
+		(isAMainType and mainInstances or valueInstances)[id] = {}
+		table.insert(isAMainType and mainInstances[id] or valueInstances[id], v)
+
 		if not loopedOverAnimations[id] then 
-			table.insert(animationsToQuery, id) 
+			table.insert(idsToQuery, id) 
 			loopedOverAnimations[id] = true
 		end
 	end
-
-	sendNotification("Notification", `Sending {#animationsToQuery} ids to localhost`, Color3.new(0, 1, 0))
-	warn(`Sending {#animationsToQuery} ids to localhost. Skipped animations Instances:`, table.unpack(skippedAnimations))
 	
-	local successfullySentAnimations, result = try(
-		HttpService.PostAsync, 
-		HttpService, 
-		`http://localhost:{ANIMATIONLOCALHOST}`, 
-		HttpService:JSONEncode({isGroup = game.CreatorType == Enum.CreatorType.Group, creatorId = game.CreatorId, animations = animationsToQuery})
-	)
+	return idsToQuery, skippedMainInstances, mainInstances, scriptIdInfo, valueInstances
+end
 
-	if not successfullySentAnimations then 
-		sendNotification("Stopped Uploading", "Failed to send ids to localhost.") 
-		warn(`Failed to send ids to localhost.\nError: {result}`)
-		busy = false
-		return 
-	end
-	
+local function getIdsFromLocalHost(assetType, mainInstances, scriptIdInfo, valueInstances)
 	local scriptLengthChange = {}
+	local idIndex = assetType == "Animation" and "AnimationId" or "SoundId"
 	
 	while task.wait(1) do
-		local success, animationsToChange = pcall(HttpService.GetAsync, HttpService, `http://localhost:{ANIMATIONLOCALHOST}`)
+		local success, idsToChange = pcall(HttpService.GetAsync, HttpService, `http://localhost:{ANIMATIONLOCALHOST}`)
 		if not success then sendNotification("Stopped Uploading", "Disconnected from localhost.") warn("Disconnected from localhost.") break end
-		if animationsToChange == "done" then sendNotification("Notification", "Finished reuploading all animations.", Color3.new(0, 1, 0)) warn("Finished reuploading all animations.") break end
-		if animationsToChange == "" then continue end
-		
-		animationsToChange = HttpService:JSONDecode(animationsToChange)
-		
-		for oldId, newId in animationsToChange do
-			if animationInstances[oldId] then
-				for i, animation in animationInstances[oldId] do
-					animation.AnimationId = "rbxassetid://" .. newId
-				end
-				
-				warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", table.unpack(animationInstances[oldId]))
-			end
-			
-			if numberInstances[oldId] then
-				for i, numberValue in numberInstances[oldId] do
-					numberValue.Value = newId
+		if idsToChange == "done" then sendNotification("Notification", "Finished reuploading all animations.", Color3.new(0, 1, 0)) warn("Finished reuploading all animations.") break end
+		if idsToChange == "" then continue end
+
+		idsToChange = HttpService:JSONDecode(idsToChange)
+
+		for oldId, newId in idsToChange do
+			if mainInstances[oldId] then
+				for i, instance in mainInstances[oldId] do
+					instance[idIndex] = "rbxassetid://" .. newId
 				end
 
-				warn(`Changed all instance values: {oldId} ; {newId}`, "Instances:", table.unpack(numberInstances[oldId]))
+				warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", table.unpack(mainInstances[oldId]))
 			end
-			
-			if not scriptAnimationInfo[oldId] then continue end
+
+			if valueInstances[oldId] then
+				for i, instance in valueInstances[oldId] do
+					if instance:IsA("NumberValue") then instance.Value = newId continue end 
+					
+					local oldValue = instance.Value
+					local oldIdLength = #oldId
+					local idStart, idEnd = string.find(oldValue, oldId)
+					
+					instance.Value = oldValue:sub(1, idStart - 1) .. newId .. oldValue:sub(idEnd + 1)
+				end
+
+				warn(`Changed all instance values: {oldId} ; {newId}`, "Instances:", table.unpack(valueInstances[oldId]))
+			end
+
+			if not scriptIdInfo[oldId] then continue end
 			local scriptsChanged = {}
-			
-			for i, animationInfo in scriptAnimationInfo[oldId] do
+
+			for i, animationInfo in scriptIdInfo[oldId] do
 				local idStart = animationInfo[1]
 				local idEnd = animationInfo[2]
 				local animationScript = animationInfo[3]
-				
+
 				table.insert(scriptsChanged, animationScript)
 
 				if scriptLengthChange[animationScript] then
 					for i,v in scriptLengthChange[animationScript]  do
 						local index = v[1]
 						local difference = v[2]
-						
+
 						if index < idStart then
 							idStart += difference
 						end
@@ -242,10 +242,10 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 					end
 				end
 				
-				ScriptEditorService:UpdateSourceAsync(animationScript, function(oldSource)
+				task.spawn(ScriptEditorService.UpdateSourceAsync, ScriptEditorService, animationScript, function(oldSource) -- hopefully this breaks nothing :innocent:
 					return oldSource:sub(1, idStart - 1) .. newId .. oldSource:sub(idEnd + 1)
 				end)
-				
+
 				if not scriptLengthChange[animationScript] then scriptLengthChange[animationScript] = {} end
 				local idDifference = #newId - #oldId
 				if idDifference == 0 then continue end
@@ -255,17 +255,57 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 			warn(`Changed all animation ids: {oldId} ; {newId}`, "Scripts:", table.unpack(scriptsChanged))
 		end
 	end
+end
+
+local function startUploading(assetType: "Sound" | "Animation", instances: { any })
+	if not testForPermissions() then sendNotification("Error", "Plugin needs script injection permission.") return end
+	if game.CreatorId == 0 then sendNotification("Error", "Publish game to group/profile.") return end
+	if busy then sendNotification("Busy", "Plugin is busy.") return end
+	local localHostStarted = pcall(HttpService.GetAsync, HttpService, `http://localhost:{ANIMATIONLOCALHOST}`)
+	if not localHostStarted then sendNotification("Error", "Could not connect to local host.") return end
+
+	busy = true
+	sendNotification("Connected", "Successfully connected to localhost", Color3.new(0, 1, 0))
 	
+	local idsToQuery, skippedMainInstances, mainInstances, scriptIdInfo, valueInstances = getInstanceIds(assetType, instances)
+	
+	sendNotification("Notification", `Sending {#idsToQuery} ids to localhost`, Color3.new(0, 1, 0))
+	warn(`Sending {#idsToQuery} ids to localhost. Skipped {assetType} instances:`, table.unpack(skippedMainInstances))
+
+	local successfullySentAnimations, result = try(
+		HttpService.PostAsync, 
+		HttpService, 
+		`http://localhost:{ANIMATIONLOCALHOST}`, 
+		HttpService:JSONEncode({isGroup = game.CreatorType == Enum.CreatorType.Group, creatorId = game.CreatorId, ids = idsToQuery, uploadType = assetType})
+	)
+
+	if not successfullySentAnimations then 
+		sendNotification("Stopped Uploading", "Failed to send ids to localhost.") 
+		warn(`Failed to send ids to localhost.\nError: {result}`)
+		busy = false
+		return 
+	end
+
+	getIdsFromLocalHost(assetType, mainInstances, scriptIdInfo, valueInstances)
+
 	busy = false
+end
+
+gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
+	startUploading("Animation", game:GetDescendants())
 end)
 
 gui.ImageLabel.SoundButton.MouseButton1Down:Connect(function()
 	sendNotification("Not Availabe", "Coming soon...")
+end)
+
+pluginButton.Click:Connect(function()
+	widget.Enabled = not widget.Enabled
 end)]]></ProtectedString>
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="ScreenGui" referent="RBX46DA5C491C484C07AD40417CC12337E3">
+			<Item class="ScreenGui" referent="RBXFEFE003A495145608073E5A06E600539">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<bool name="AutoLocalize">true</bool>
@@ -288,7 +328,7 @@ end)]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 					<token name="ZIndexBehavior">1</token>
 				</Properties>
-				<Item class="Frame" referent="RBXBFB41819D7D14D5A80C336078FD83A76">
+				<Item class="Frame" referent="RBX0A99AF8741CB4757883FF7382AF52C39">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -351,7 +391,7 @@ end)]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="UIListLayout" referent="RBX7C01D79242254982A10C913CF6477556">
+					<Item class="UIListLayout" referent="RBX25A39D4E0B43405D87CC6C90F05ADADF">
 						<Properties>
 							<BinaryString name="AttributesSerialize"></BinaryString>
 							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -375,7 +415,7 @@ end)]]></ProtectedString>
 					</Item>
 				</Item>
 			</Item>
-			<Item class="Frame" referent="RBX0627D03C824841A89614E1FA665D85FF">
+			<Item class="Frame" referent="RBX9A247BC489814C68BBF439CFB0575AFE">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -438,7 +478,7 @@ end)]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="TextLabel" referent="RBX672C195AE6C44A9A8F20D13CD6F0717C">
+				<Item class="TextLabel" referent="RBXFB29BA6959AE4C4EA4EA40B2BF9FA41F">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -532,7 +572,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="TextLabel" referent="RBXFE8FE08B50D34ABEB4233037474E1989">
+				<Item class="TextLabel" referent="RBX745EC29F91BD400A84B6DD0105B0B439">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -626,7 +666,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="UICorner" referent="RBX07831D98C9BA4D84930658A50DC49038">
+				<Item class="UICorner" referent="RBX0C0ED48F4F744FFBBF9440484F84916F">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -641,7 +681,7 @@ end)]]></ProtectedString>
 					</Properties>
 				</Item>
 			</Item>
-			<Item class="Sound" referent="RBX88EBF5586F6D4C75B540C6EA3AF0D49D">
+			<Item class="Sound" referent="RBX8BDFA4B5FBCF4139B3E9DB8CD2F1ABC9">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -665,7 +705,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBX1BFB3CB2656E46A09A8A6FC2EC6465D9">
+			<Item class="Sound" referent="RBX67A6DDAC7A8E4DB4A8D112B02BC49C3B">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -689,7 +729,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBX63823730A5AB4572A30BA2C8E281DE66">
+			<Item class="Sound" referent="RBX6BFAAA369CCA49A485E68FEC8A3F8F84">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -713,7 +753,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="ModuleScript" referent="RBXAE8ECD71DC0A4F3ABCAB3D37FF72B0E4">
+			<Item class="ModuleScript" referent="RBXAA7329DCB17E43CA998BF15C414B2C2F">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -905,7 +945,7 @@ return Signal]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
 			</Item>
-			<Item class="Frame" referent="RBX7305268A708A4FC48F6066D89EB8A024">
+			<Item class="Frame" referent="RBX532A8829E87344708CBABA1EA9DDEEDF">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -968,7 +1008,7 @@ return Signal]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="ImageLabel" referent="RBX566878B08ECE42918FAB000086AF89FC">
+				<Item class="ImageLabel" referent="RBXC0BA3F2541A94B1892E0674749498206">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -1064,7 +1104,7 @@ return Signal]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="TextButton" referent="RBX61A829A8AB464655AF1FFB6FAFF380E2">
+					<Item class="TextButton" referent="RBX68594736153A483898D287A2606A59DB">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1163,7 +1203,7 @@ return Signal]]></ProtectedString>
 							<int name="ZIndex">1</int>
 						</Properties>
 					</Item>
-					<Item class="TextButton" referent="RBXDCEB8C44C9494985B2003A18823BD7DC">
+					<Item class="TextButton" referent="RBX38EF8D00AC594C5BAC5785CBDA832DBC">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1263,7 +1303,7 @@ return Signal]]></ProtectedString>
 						</Properties>
 					</Item>
 				</Item>
-				<Item class="TextLabel" referent="RBX2FAA224332D4474485C550CFC1B9B40A">
+				<Item class="TextLabel" referent="RBXC3C2A7815CEB4809846D286FF153E767">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">

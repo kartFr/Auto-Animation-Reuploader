@@ -14,17 +14,9 @@
 #   GNU General Public License for more details.
 #
 
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import subprocess
-import threading
-import endpoints
-import requests
-import aiohttp
-import asyncio
-import json
-import time
-import sys
-import os
+import subprocess, endpoints, requests, aiohttp, asyncio, json, time, sys, os, uvicorn
+from fastapi.responses import JSONResponse, Response
+from fastapi import FastAPI, Request
 
 completedAnimations = {}
 XSRFToken = None
@@ -34,11 +26,12 @@ cookie = None
 totalIds = 0
 idsUploaded = 0
 
+app = FastAPI()
 
 class Config:
     cookie_file = "cookie.txt"
     version_file = "VERSION.txt"
-    server_port = 6969
+    server_port = 5544
 
 
 async def sendRequestAsync(session, requestType, url, cookies={}, headers={}, data=None):
@@ -273,51 +266,43 @@ async def bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup):
     print("\033[0mWaiting for client to finish changing ids...")
     finished = True
 
+@app.get("/")
+async def get():
+    global finished, completedAnimations
 
-def startUploadingAssets(assetType, ids, creatorId, isGroup):
-    asyncio.run(bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup))
-
-
-class Requests(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-
-        global finished
-        global completedAnimations
-
-        if finished and len(completedAnimations) == 0:
-            global started
-
-            self.wfile.write(bytes(("done").encode("utf-8")))
-            print("\033[0mYou may close this terminal. (You can spoof again without restarting if you need to.)")
-            finished = False
-            started = False
-        else:
-            currentAnimations = completedAnimations
-            completedAnimations = {}
-            self.wfile.write(bytes(json.dumps(currentAnimations).encode()))  
-
-    def do_POST(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-
+    if finished and len(completedAnimations) == 0:
         global started
-        if started:
-            return
-        
+
+        if started: # only print if plugin actually uplaods
+            print("\033[0mYou may close this terminal. (You can spoof again without restarting if you need to.)")
+
+        finished = False
+        started = False
+
+        return Response("done")
+    else:
+        currentAnimations = completedAnimations
+        completedAnimations = {}
+        return JSONResponse(currentAnimations)
+
+
+@app.post("/")
+async def post(request: Request):
+    global started
+    if started:
+        return
+    
+    content = await request.json()
+
+    if "uploadType" in content and "ids" in content and "creatorId" in content and "isGroup" in content:
+        clearScreen()
         started = True
-        contentLength = int(self.headers['Content-Length'])
-        recievedData = json.loads(self.rfile.read(contentLength).decode('utf-8'))
-
-        print("\033[33mUploading animations.")
-        thread = threading.Thread(target=startUploadingAssets, args=("Animation", recievedData["animations"], recievedData["creatorId"], recievedData["isGroup"],))
-        thread.start()
-
-    def log_message(self, *args):
-        pass
+        print(f"\033[33mUploading {content["uploadType"]}s.")
+        asyncio.create_task(bulkPublishAssetsAsync(content["uploadType"], content["ids"], content["creatorId"], content["isGroup"]))
+    else:
+        global finished
+        finished = True
+        print("\033[31mMissing crucial data your plugin may be out of date. Aborting reupload.")
 
 
 if __name__ == '__main__':
@@ -351,7 +336,4 @@ if __name__ == '__main__':
                 print("\033[31mCookie is invalid.")  
 
     print("\033[0mlocalhost started you may start the plugin.")
-
-    with HTTPServer(("localhost", Config.server_port), Requests) as server:
-        server.serve_forever()
-    
+    uvicorn.run(app, port=Config.server_port, log_level="warning")
