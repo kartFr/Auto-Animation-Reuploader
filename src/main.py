@@ -297,7 +297,7 @@ async def post(request: Request):
     if "uploadType" in content and "ids" in content and "creatorId" in content and "isGroup" in content:
         clearScreen()
         started = True
-        print(f"\033[33mUploading {content["uploadType"]}s.")
+        print(f"\033[33mUploading {content['uploadType']}s.")
         asyncio.create_task(bulkPublishAssetsAsync(content["uploadType"], content["ids"], content["creatorId"], content["isGroup"]))
     else:
         global finished
