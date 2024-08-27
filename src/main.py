@@ -58,13 +58,16 @@ def isValidCookie():
     global cookie
     
     try:
-        json.loads(requests.get(
+        r = requests.get(
             endpoints.user_info,
             cookies={".ROBLOSECURITY": cookie}
-        ).content)
+        )
+        print(r.text, r.text in ('true', 'false'))
+        if r.text in ('true', 'false'):
+            return True
     except:
         return False
-    return True
+    return False
 
 
 def getSavedCookie():
@@ -330,7 +333,7 @@ if __name__ == '__main__':
             if isValidCookie():
                 updateSavedCookie()
                 break
-            elif not "WARNING:-DO-NOT-SHARE-THIS." in cookie:
+            elif not "_|WARNING:-DO-NOT-SHARE-THIS." in cookie:
                 print("\033[31mNo Roblox warning in cookie. Include the entire .ROBLOSECURITY warning.")
             else:
                 print("\033[31mCookie is invalid.")  
