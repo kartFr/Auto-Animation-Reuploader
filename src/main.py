@@ -62,7 +62,6 @@ def isValidCookie():
             endpoints.user_info,
             cookies={".ROBLOSECURITY": cookie}
         )
-        print(r.text, r.text in ('true', 'false'))
         if r.text in ('true', 'false'):
             return True
     except:
