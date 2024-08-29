@@ -1,7 +1,7 @@
 <roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
 	<External>null</External>
 	<External>nil</External>
-	<Item class="Folder" referent="RBX180393C934DC4DAB8E4AD65E69ABE865">
+	<Item class="Folder" referent="RBX22AB9F25277C4D04A89BF93283A3CEAF">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -10,7 +10,7 @@
 			<int64 name="SourceAssetId">-1</int64>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="Script" referent="RBX681803DA7CAA46F5B5CB7C349FE4DEEA">
+		<Item class="Script" referent="RBX59E69D92D63447D3850FFA7041D02422">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -19,7 +19,7 @@
 				<Content name="LinkedSource"><null></null></Content>
 				<string name="Name">Script</string>
 				<token name="RunContext">0</token>
-				<string name="ScriptGuid">{80FF0A35-74C8-454C-84E3-66A6530937C4}</string>
+				<string name="ScriptGuid">{5F04AFAC-F345-4FDB-B095-E7732CA45AC1}</string>
 				<ProtectedString name="Source"><![CDATA[local ANIMATIONLOCALHOST = 5544
 
 local ScriptEditorService = game:GetService("ScriptEditorService")
@@ -52,6 +52,10 @@ local widget = plugin:CreateDockWidgetPluginGui(
 widget.Title = "sub to kartfr"
 script.NotificationUi.Parent = game:GetService("CoreGui")
 gui.Parent = widget
+
+local function safeUnpack(tbl)
+	return tbl < 1000 and table.unpack(tbl) or "Too many to unpack 💀💀"
+end
 
 local function getNotificationId()
 	notificationId += 1
@@ -117,13 +121,16 @@ local function isValidId(id: string)
 	return #id > 7 and #id < 13 and string.find(id, "[^0]")
 end
 
-local function getInstanceIds(mainType: "Sound" | "Animation", instances: { any })
+local function getInstanceIds(mainTypeName: "Audio" | "Animation", instances: { any })
 	local idsToQuery = {}
 	local loopedOverAnimations = {}
 	local mainInstances = {}
 	local skippedMainInstances = {}
 	local scriptIdInfo = {}
 	local valueInstances = {}
+	
+	local mainIndex = mainTypeName == "Animation" and "AnimationId" or "SoundId"
+	local mainType = mainTypeName == "Animation" and "Animation" or "Sound"
 
 	for i,v in instances do
 		local isAScript = isScript(v)
@@ -158,7 +165,7 @@ local function getInstanceIds(mainType: "Sound" | "Animation", instances: { any 
 		end
 		
 
-		local id = string.gsub(isAValueInstance and v.Value or v.AnimationId, "%D", "")
+		local id = string.gsub(isAValueInstance and v.Value or v[mainIndex], "%D", "")
 		if not isValidId(id) then 
 			if isAMainType then table.insert(skippedMainInstances, v) end
 			continue
@@ -200,7 +207,7 @@ local function getIdsFromLocalHost(assetType, mainInstances, scriptIdInfo, value
 					instance[idIndex] = "rbxassetid://" .. newId
 				end
 
-				warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", table.unpack(mainInstances[oldId]))
+				warn(`Changed all animation ids: {oldId} ; {newId}`, "Instances:", safeUnpack(mainInstances[oldId]))
 			end
 
 			if valueInstances[oldId] then
@@ -214,7 +221,7 @@ local function getIdsFromLocalHost(assetType, mainInstances, scriptIdInfo, value
 					instance.Value = oldValue:sub(1, idStart - 1) .. newId .. oldValue:sub(idEnd + 1)
 				end
 
-				warn(`Changed all instance values: {oldId} ; {newId}`, "Instances:", table.unpack(valueInstances[oldId]))
+				warn(`Changed all instance values: {oldId} ; {newId}`, "Instances:", safeUnpack(valueInstances[oldId]))
 			end
 
 			if not scriptIdInfo[oldId] then continue end
@@ -252,12 +259,12 @@ local function getIdsFromLocalHost(assetType, mainInstances, scriptIdInfo, value
 				table.insert(scriptLengthChange[animationScript], {idStart, idDifference})
 			end
 
-			warn(`Changed all animation ids: {oldId} ; {newId}`, "Scripts:", table.unpack(scriptsChanged))
+			warn(`Changed all animation ids: {oldId} ; {newId}`, "Scripts:", safeUnpack(scriptsChanged))
 		end
 	end
 end
 
-local function startUploading(assetType: "Sound" | "Animation", instances: { any })
+local function startUploading(assetType: "Audio" | "Animation", instances: { any })
 	if not testForPermissions() then sendNotification("Error", "Plugin needs script injection permission.") return end
 	if game.CreatorId == 0 then sendNotification("Error", "Publish game to group/profile.") return end
 	if busy then sendNotification("Busy", "Plugin is busy.") return end
@@ -270,7 +277,7 @@ local function startUploading(assetType: "Sound" | "Animation", instances: { any
 	local idsToQuery, skippedMainInstances, mainInstances, scriptIdInfo, valueInstances = getInstanceIds(assetType, instances)
 	
 	sendNotification("Notification", `Sending {#idsToQuery} ids to localhost`, Color3.new(0, 1, 0))
-	warn(`Sending {#idsToQuery} ids to localhost. Skipped {assetType} instances:`, table.unpack(skippedMainInstances))
+	warn(`Sending {#idsToQuery} ids to localhost. Skipped {assetType} instances:`, safeUnpack(skippedMainInstances))
 
 	local successfullySentAnimations, result = try(
 		HttpService.PostAsync, 
@@ -296,7 +303,7 @@ gui.ImageLabel.AnimationButton.MouseButton1Down:Connect(function()
 end)
 
 gui.ImageLabel.SoundButton.MouseButton1Down:Connect(function()
-	sendNotification("Not Availabe", "Coming soon...")
+	
 end)
 
 pluginButton.Click:Connect(function()
@@ -305,7 +312,7 @@ end)]]></ProtectedString>
 				<int64 name="SourceAssetId">-1</int64>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="ScreenGui" referent="RBXFEFE003A495145608073E5A06E600539">
+			<Item class="ScreenGui" referent="RBXCF32D880B23C43F1994CAE41DE0815FD">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<bool name="AutoLocalize">true</bool>
@@ -328,7 +335,7 @@ end)]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 					<token name="ZIndexBehavior">1</token>
 				</Properties>
-				<Item class="Frame" referent="RBX0A99AF8741CB4757883FF7382AF52C39">
+				<Item class="Frame" referent="RBX6BA4911D2B814AA4B4C5986CB537AE18">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -391,7 +398,7 @@ end)]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="UIListLayout" referent="RBX25A39D4E0B43405D87CC6C90F05ADADF">
+					<Item class="UIListLayout" referent="RBX7CABEDED1C804C86A522F1BB814C2CC5">
 						<Properties>
 							<BinaryString name="AttributesSerialize"></BinaryString>
 							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -415,7 +422,7 @@ end)]]></ProtectedString>
 					</Item>
 				</Item>
 			</Item>
-			<Item class="Frame" referent="RBX9A247BC489814C68BBF439CFB0575AFE">
+			<Item class="Frame" referent="RBX5A0E429669584BEBA3AFF0803BF3F57F">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -478,7 +485,7 @@ end)]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="TextLabel" referent="RBXFB29BA6959AE4C4EA4EA40B2BF9FA41F">
+				<Item class="TextLabel" referent="RBX05BBED6DB57F49EB9D89536F311B6B49">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -572,7 +579,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="TextLabel" referent="RBX745EC29F91BD400A84B6DD0105B0B439">
+				<Item class="TextLabel" referent="RBXBB827790023845EBA751DCE97B5BD56B">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -666,7 +673,7 @@ end)]]></ProtectedString>
 						<int name="ZIndex">1</int>
 					</Properties>
 				</Item>
-				<Item class="UICorner" referent="RBX0C0ED48F4F744FFBBF9440484F84916F">
+				<Item class="UICorner" referent="RBX8727994E410A446CACB75F4D24E2049D">
 					<Properties>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -681,7 +688,7 @@ end)]]></ProtectedString>
 					</Properties>
 				</Item>
 			</Item>
-			<Item class="Sound" referent="RBX8BDFA4B5FBCF4139B3E9DB8CD2F1ABC9">
+			<Item class="Sound" referent="RBX42A5C3B331D64150955BF4EA20A1924C">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -705,7 +712,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBX67A6DDAC7A8E4DB4A8D112B02BC49C3B">
+			<Item class="Sound" referent="RBXCFF0BD7FB9F34AC6AD462A399E59864A">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -729,7 +736,7 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="Sound" referent="RBX6BFAAA369CCA49A485E68FEC8A3F8F84">
+			<Item class="Sound" referent="RBX68DCFA1F840D4EFFB441EEBDAC3DA286">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -753,14 +760,14 @@ end)]]></ProtectedString>
 					<float name="xmlRead_MaxDistance_3">10000</float>
 				</Properties>
 			</Item>
-			<Item class="ModuleScript" referent="RBXAA7329DCB17E43CA998BF15C414B2C2F">
+			<Item class="ModuleScript" referent="RBX22CA3B5FF86E40D29FF8FD8C0CA0440A">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
 					<bool name="DefinesCapabilities">false</bool>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">Signal</string>
-					<string name="ScriptGuid">{5D4E4B40-A751-4E76-8E0D-14AC0E31AB35}</string>
+					<string name="ScriptGuid">{549488CC-59CF-4DAE-879D-B9CD98DE9739}</string>
 					<ProtectedString name="Source"><![CDATA[--------------------------------------------------------------------------------
 --               Batched Yield-Safe Signal Implementation                     --
 -- This is a Signal class which has effectively identical behavior to a       --
@@ -945,7 +952,7 @@ return Signal]]></ProtectedString>
 					<BinaryString name="Tags"></BinaryString>
 				</Properties>
 			</Item>
-			<Item class="Frame" referent="RBX532A8829E87344708CBABA1EA9DDEEDF">
+			<Item class="Frame" referent="RBX89D638E47DC741EC9B75BEBA88012B9A">
 				<Properties>
 					<bool name="Active">false</bool>
 					<Vector2 name="AnchorPoint">
@@ -1008,7 +1015,7 @@ return Signal]]></ProtectedString>
 					<bool name="Visible">true</bool>
 					<int name="ZIndex">1</int>
 				</Properties>
-				<Item class="ImageLabel" referent="RBXC0BA3F2541A94B1892E0674749498206">
+				<Item class="ImageLabel" referent="RBX6C4DB758CAA4487D95E342794518E432">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">
@@ -1104,7 +1111,7 @@ return Signal]]></ProtectedString>
 						<bool name="Visible">true</bool>
 						<int name="ZIndex">1</int>
 					</Properties>
-					<Item class="TextButton" referent="RBX68594736153A483898D287A2606A59DB">
+					<Item class="TextButton" referent="RBX328912E04C5A4FD784D15679AA6BD77A">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1203,7 +1210,7 @@ return Signal]]></ProtectedString>
 							<int name="ZIndex">1</int>
 						</Properties>
 					</Item>
-					<Item class="TextButton" referent="RBX38EF8D00AC594C5BAC5785CBDA832DBC">
+					<Item class="TextButton" referent="RBXB729FF36CF7F47B38EB9D67B75C22CD7">
 						<Properties>
 							<bool name="Active">true</bool>
 							<Vector2 name="AnchorPoint">
@@ -1303,7 +1310,7 @@ return Signal]]></ProtectedString>
 						</Properties>
 					</Item>
 				</Item>
-				<Item class="TextLabel" referent="RBXC3C2A7815CEB4809846D286FF153E767">
+				<Item class="TextLabel" referent="RBX4B7C27F8349F4EC1843E69360958D2F1">
 					<Properties>
 						<bool name="Active">false</bool>
 						<Vector2 name="AnchorPoint">

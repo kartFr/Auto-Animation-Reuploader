@@ -59,7 +59,7 @@ def isValidCookie():
     
     try:
         json.loads(requests.get(
-            endpoints.user_info,
+            endpoints.authenticated,
             cookies={".ROBLOSECURITY": cookie}
         ).content)
     except:
@@ -302,7 +302,7 @@ async def post(request: Request):
     else:
         global finished
         finished = True
-        print("\033[31mMissing crucial data your plugin may be out of date. Aborting reupload.")
+        print("\033[31mMissing data, your plugin may be out of date. Aborting reupload.")
 
 
 if __name__ == '__main__':
