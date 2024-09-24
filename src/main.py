@@ -53,19 +53,21 @@ async def sendRequestAsync(session, requestType, url, cookies={}, headers={}, da
                 return {"status_code": response.status, "reason": response.reason, "content": await response.read()}
         except:
             pass
-
+            
 def isValidCookie():
     global cookie
     
     try:
-        json.loads(requests.get(
+        response = json.loads(requests.get(
             endpoints.authenticated,
             cookies={".ROBLOSECURITY": cookie}
         ).content)
+
+        if "errors" in response:
+            return False
+        return True
     except:
         return False
-    return True
-
 
 def getSavedCookie():
     try:
