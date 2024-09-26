@@ -250,8 +250,8 @@ async def bulkPublishAssetsAsync(assetType, ids, creatorId, isGroup):
                 print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is owned by roblox: { assetId }.")
                 continue
             elif assetInfo["type"] != assetType:
-                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is not an animation: { assetId }.")
                 idsUploaded += 1
+                print(f"\033[33m[{ idsUploaded }/{ totalIds }] { name } is not an animation: { assetId }.")
                 continue
 
             uploadTasks.append(asyncio.create_task(publishAssetAsync(session, assetId, name, creatorId, isGroup)))
